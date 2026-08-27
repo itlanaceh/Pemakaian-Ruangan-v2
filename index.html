@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Jadwal Pemakaian Ruangan & TV Signage</title>
+  <link rel="icon" id="dynamicFavicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300a3ff'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Poppins', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#00a3ff',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .marquee-track {
+      display: inline-block;
+      white-space: nowrap;
+      animation: marquee 25s linear infinite;
+    }
+    @keyframes marquee {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+
+  <!-- OVERLAY LOADING (z-[9999]) -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
+    <div class="w-14 h-14 border-4 border-white/20 border-t-[#00a3ff] rounded-full animate-spin"></div>
+    <p id="loadingText" class="mt-4 font-bold text-sm tracking-wide">Memuat Sistem...</p>
+  </div>
+
+  <!-- TOAST CONTAINER (z-[2000]) -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[2000] flex flex-col gap-3 pointer-events-none"></div>
+
+  <!-- MODAL KONFIRMASI (z-[1000]) -->
+  <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4 border border-rose-100">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </div>
+      <h3 id="confirmTitle" class="font-extrabold text-base text-slate-800 mb-1">Konfirmasi</h3>
+      <p id="confirmMsg" class="text-xs text-slate-500 font-medium mb-6">Apakah Anda yakin?</p>
+      <div class="flex items-center justify-center gap-3">
+        <button onclick="closeConfirmModal(false)" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition">Batal</button>
+        <button onclick="closeConfirmModal(true)" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-rose-500 text-white hover:bg-rose-600 transition shadow-md shadow-rose-500/20">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KONFIGURASI SUPABASE (z-[1000]) -->
+  <div id="supabaseConfigModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 transform transition-all">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16"/></svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-lg text-slate-800">Koneksi Database Supabase</h3>
+          <p class="text-xs text-slate-400">Tersimpan permanen sekali konfigurasi</p>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Project URL</label>
+          <input type="text" id="inputSbUrl" placeholder="https://xyzcompany.supabase.co" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Anon Public API Key</label>
+          <textarea id="inputSbKey" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsInR5..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]"></textarea>
+        </div>
+      </div>
+      <div class="mt-6 flex justify-end gap-2">
+        <button onclick="closeSupabaseConfigModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition">Batal</button>
+        <button onclick="saveSupabaseConfig()" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00a3ff] text-white hover:bg-sky-600 transition shadow-md shadow-sky-500/20">Simpan & Hubungkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH VIEW (LOGIN) -->
+  <div id="loginView" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center">
+      <div id="loginModalLogo" class="w-16 h-16 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center mx-auto mb-4 border border-sky-100 overflow-hidden">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </div>
+      <h1 class="font-extrabold text-xl text-slate-800">Portal Operator Ruangan</h1>
+      <p class="text-xs text-slate-400 font-medium mb-6">Masukkan PIN Operator untuk mengelola jadwal dan tampilan TV</p>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">PIN Operator</label>
+          <input type="password" id="loginPinInput" maxlength="10" placeholder="••••" required class="w-full text-center text-lg tracking-widest font-extrabold bg-slate-50 border border-slate-200 rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <button type="submit" class="w-full py-3 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold rounded-2xl text-sm transition shadow-lg shadow-sky-500/20">Masuk Dashboard</button>
+      </form>
+
+      <div class="mt-6 pt-6 border-t border-slate-100">
+        <button onclick="openTvSignageModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Buka Display TV (Mode Publik)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN OPERATOR DASHBOARD -->
+  <div id="mainApp" style="display: none;" class="min-h-screen flex bg-slate-50">
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 shrink-0">
+      <div class="space-y-6">
+        <!-- BRAND -->
+        <div class="flex items-center gap-3">
+          <div id="sidebarLogoWrapper" class="w-11 h-11 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center overflow-hidden shrink-0 border border-sky-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </div>
+          <div>
+            <h2 class="font-extrabold text-sm text-slate-800 leading-tight">ADMIN</h2>
+            <span class="inline-block mt-0.5 px-2 py-0.5 bg-sky-50 text-[#00a3ff] font-bold text-[10px] rounded-full">Operator System</span>
+          </div>
+        </div>
+
+        <!-- NAVIGATION -->
+        <nav class="space-y-1 text-xs font-bold text-slate-500">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-sky-50 text-[#00a3ff] transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            Dashboard Statistik
+          </button>
+          <button onclick="switchTab('jadwal')" id="nav-jadwal" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 hover:text-slate-700 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Jadwal Ruangan
+          </button>
+          <button onclick="switchTab('ruangan')" id="nav-ruangan" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 hover:text-slate-700 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            Master Ruangan
+          </button>
+          <button onclick="switchTab('runningText')" id="nav-runningText" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 hover:text-slate-700 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+            Running Text & Aset TV
+          </button>
+          <button onclick="openChangePinModal()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 hover:text-slate-700 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            Ganti PIN Operator
+          </button>
+        </nav>
+
+        <!-- ACTION GROUP -->
+        <div class="pt-4 border-t border-slate-100 space-y-2">
+          <span class="block text-[10px] font-black tracking-wider text-slate-400 uppercase">Aksi & Pengaturan</span>
+          <button onclick="openTvSignageModal()" class="w-full py-2 px-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Buka Display TV
+          </button>
+          <button onclick="openSupabaseConfigModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition">
+            <svg class="w-4 h-4 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Koneksi Database
+          </button>
+        </div>
+      </div>
+
+      <button onclick="handleLogout()" class="w-full py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl flex items-center justify-center gap-2 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Keluar Sesi
+      </button>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <!-- HEADER -->
+      <header class="bg-white border-b border-slate-200/80 px-8 py-5 flex items-center justify-between">
+        <div>
+          <h1 id="pageTitle" class="text-xl font-black text-slate-800 tracking-tight">DASHBOARD & STATISTIK</h1>
+          <p id="pageSubtitle" class="text-xs text-slate-400 font-medium">Analitik pemanfaatan ruangan secara komprehensif</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-600">
+            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="syncTimestamp">Realtime Sync</span>
+          </div>
+          <button onclick="openScheduleModal()" class="px-5 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Jadwal
+          </button>
+        </div>
+      </header>
+
+      <!-- BODY CONTENT -->
+      <div class="p-8 space-y-6">
+
+        <!-- TAB DASHBOARD STATISTIK -->
+        <section id="tab-dashboard" class="space-y-6">
+          <!-- TOP STAT CARDS -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <span class="text-[10px] font-black tracking-wider text-slate-400 uppercase">Total Agenda</span>
+              <p id="dashTotalAgenda" class="text-3xl font-black text-slate-800 mt-2">0</p>
+              <span class="text-xs font-medium text-slate-400 mt-1 block">Tercatat di sistem</span>
+            </div>
+            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <span class="text-[10px] font-black tracking-wider text-[#00a3ff] uppercase">Sedang Berlangsung</span>
+              <p id="dashActiveAgenda" class="text-3xl font-black text-[#00a3ff] mt-2">0</p>
+              <span class="text-xs font-medium text-slate-400 mt-1 block">Saat ini di ruangan</span>
+            </div>
+            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <span class="text-[10px] font-black tracking-wider text-emerald-500 uppercase">Ruangan Teraktif</span>
+              <p id="dashTopRoom" class="text-xl font-black text-slate-800 mt-2 truncate">-</p>
+              <span class="text-xs font-medium text-slate-400 mt-1 block">Frekuensi pemakaian terbanyak</span>
+            </div>
+          </div>
+
+          <!-- TIME FILTER BUTTONS -->
+          <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+            <span class="text-xs font-bold text-slate-700">Filter Periode Analitik:</span>
+            <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-500">
+              <button onclick="setAnalyticsFilter('daily')" id="btnFilterDaily" class="px-3 py-1.5 rounded-lg transition">Harian</button>
+              <button onclick="setAnalyticsFilter('weekly')" id="btnFilterWeekly" class="px-3 py-1.5 rounded-lg transition">Mingguan</button>
+              <button onclick="setAnalyticsFilter('monthly')" id="btnFilterMonthly" class="px-3 py-1.5 rounded-lg bg-white text-[#00a3ff] shadow-sm transition">Bulanan</button>
+              <button onclick="setAnalyticsFilter('yearly')" id="btnFilterYearly" class="px-3 py-1.5 rounded-lg transition">Tahunan</button>
+            </div>
+          </div>
+
+          <!-- 3 CHARTS IN BENTO GRID -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 1. GRAFIK BATANG -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Batang: Pemakaian Per Ruangan</h3>
+              <p class="text-xs text-slate-400 mb-4">Volume kegiatan berdasarkan lokasi</p>
+              <div class="h-60 relative"><canvas id="barChart"></canvas></div>
+            </div>
+
+            <!-- 2. GRAFIK GARIS -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Garis: Tren Alokasi Jadwal</h3>
+              <p class="text-xs text-slate-400 mb-4">Pergerakan frekuensi waktu penggunaan</p>
+              <div class="h-60 relative"><canvas id="lineChart"></canvas></div>
+            </div>
+
+            <!-- 3. GRAFIK PIE -->
+            <div class="lg:col-span-12 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Pie: Proporsi Utilisasi Ruangan</h3>
+              <p class="text-xs text-slate-400 mb-4">Distribusi persentase pembagian ruang</p>
+              <div class="h-64 relative flex items-center justify-center"><canvas id="pieChart"></canvas></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB JADWAL RUANGAN (TABEL & PENCARIAN) -->
+        <section id="tab-jadwal" class="space-y-6 hidden">
+          <!-- FILTER & SEARCH ROW -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+            <div class="relative flex-1 min-w-[260px]">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input type="text" id="searchInput" oninput="handleSearchDebounced()" placeholder="Cari kegiatan atau nama ruangan..." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+            </div>
+            <div class="w-56">
+              <select id="filterRoomSelect" onchange="renderSchedules()" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff] text-slate-700">
+                <option value="">Semua Ruangan</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- SCHEDULE DATA TABLE -->
+          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th class="py-4 px-6">Status</th>
+                    <th class="py-4 px-6">Ruangan & Posisi</th>
+                    <th class="py-4 px-6">Kegiatan / Agenda</th>
+                    <th class="py-4 px-6">Waktu Pemakaian</th>
+                    <th class="py-4 px-6">Tanggal</th>
+                    <th class="py-4 px-6 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleTableBody" class="divide-y divide-slate-100 text-slate-700 font-medium"></tbody>
+              </table>
+              <div id="emptySchedule" class="p-10 text-center text-slate-400 font-medium text-xs hidden">
+                Tidak ada jadwal kegiatan ditemukan
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB MASTER RUANGAN -->
+        <section id="tab-ruangan" class="space-y-6 hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-extrabold text-slate-800">Daftar Master Ruangan</h2>
+              <p class="text-xs text-slate-400">Kelola daftar ruangan dan lantai lokasi</p>
+            </div>
+            <button onclick="openRoomModal()" class="px-4 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              Tambah Ruangan
+            </button>
+          </div>
+          <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th class="py-4 px-6">Nama Ruangan</th>
+                    <th class="py-4 px-6">Lantai / Posisi</th>
+                    <th class="py-4 px-6 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="roomTableBody" class="divide-y divide-slate-100 text-slate-700 font-medium"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB RUNNING TEXT & ASET VISUAL -->
+        <section id="tab-runningText" class="space-y-6 hidden">
+          <div>
+            <h2 class="text-base font-extrabold text-slate-800">Pengaturan Display & Aset Visual TV</h2>
+            <p class="text-xs text-slate-400">Atur pesan informasi publik dan aset visual layar TV.</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- KARTU 1: TEKS BERJALAN (MARQUEE) -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+              <div>
+                <span class="block text-[11px] font-black tracking-wider text-slate-700 uppercase mb-3">Teks Berjalan (Marquee)</span>
+                <textarea id="runningTextInput" rows="5" placeholder="Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]"></textarea>
+              </div>
+              <div class="mt-6">
+                <button onclick="saveRunningText()" class="w-full py-3 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-2xl transition shadow-md shadow-sky-500/20">Simpan</button>
+              </div>
+            </div>
+
+            <!-- KARTU 2: ASET VISUAL TV SIGNAGE -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+              <span class="block text-[11px] font-black tracking-wider text-slate-700 uppercase">Aset Visual TV Signage</span>
+
+              <!-- LOGO INSTANSI -->
+              <div class="space-y-2">
+                <label class="block text-[10px] font-black text-slate-400 uppercase">Logo Instansi</label>
+                <div class="flex items-center gap-3">
+                  <div id="settingsLogoPreview" class="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                    <svg class="w-6 h-6 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                  </div>
+                  <button onclick="triggerLogoUpload()" class="flex-1 py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition text-center">
+                    Ganti Logo
+                  </button>
+                  <input type="file" id="logoFileInput" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                </div>
+              </div>
+
+              <div class="border-t border-slate-100"></div>
+
+              <!-- LATAR BELAKANG TV -->
+              <div class="space-y-2">
+                <label class="block text-[10px] font-black text-slate-400 uppercase">Latar Belakang TV</label>
+                <button onclick="triggerBackgroundUpload()" class="w-full py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition text-center">
+                  Ganti Foto Latar TV
+                </button>
+                <input type="file" id="bgFileInput" accept="image/*" class="hidden" onchange="handleBackgroundUpload(event)">
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- TV SIGNAGE FULLSCREEN DISPLAY -->
+  <div id="tvSignageView" style="display: none;" class="fixed inset-0 z-[1000] bg-slate-900 bg-cover bg-center flex flex-col justify-between select-none">
+    <!-- TV HEADER -->
+    <header class="bg-slate-900/60 backdrop-blur-md px-10 py-5 border-b border-white/10 flex items-center justify-between text-white">
+      <div class="flex items-center gap-4">
+        <div id="tvLogoWrapper" class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur p-2 flex items-center justify-center border border-white/20 overflow-hidden">
+          <svg class="w-7 h-7 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        </div>
+        <div>
+          <h1 class="font-black text-xl tracking-wide uppercase">JADWAL PEMAKAIAN RUANGAN</h1>
+          <p id="tvDateDisplay" class="text-xs text-sky-200 font-semibold"></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <div class="text-right">
+          <span id="tvClock" class="font-black text-3xl tracking-widest text-white">00:00:00</span>
+          <span class="block text-[10px] font-bold text-sky-300">WAKTU INDONESIA BARAT</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- TOMBOL FULLSCREEN TV -->
+          <button onclick="toggleTvFullscreen()" id="btnTvFullscreen" title="Layar Penuh" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
+            <svg id="iconFullscreenEnter" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            <svg id="iconFullscreenExit" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7"/></svg>
+          </button>
+          <!-- TOMBOL TUTUP DISPLAY TV -->
+          <button onclick="closeTvSignageModal()" title="Tutup Display" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- TV SCHEDULE GRID CONTAINER -->
+    <div class="flex-1 p-10 overflow-y-auto">
+      <div id="tvScheduleCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+      <div id="emptyTvSignage" class="h-full flex flex-col items-center justify-center text-white/50 text-center py-20 hidden">
+        <svg class="w-16 h-16 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <h3 class="text-xl font-bold text-white/70">Tidak Ada Agenda Aktif Saat Ini</h3>
+        <p class="text-xs text-white/40 mt-1">Jadwal pertama akan tayang pada jam 06:30 dan agenda berikutnya H-5 menit</p>
+      </div>
+    </div>
+
+    <!-- TV RUNNING TEXT FOOTER -->
+    <footer class="h-11 bg-slate-950/80 backdrop-blur-md border-t border-white/10 flex items-center overflow-hidden">
+      <div class="px-5 bg-[#00a3ff] h-full flex items-center text-white font-black text-xs tracking-wider uppercase shrink-0">
+        Informasi
+      </div>
+      <div class="flex-1 overflow-hidden">
+        <div id="tvMarqueeText" class="marquee-track text-xs font-bold text-white tracking-wide">
+          Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL FORM JADWAL (24-JAM MURNI) -->
+  <div id="scheduleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100">
+      <h3 id="scheduleModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Jadwal Ruangan</h3>
+      <form onsubmit="handleScheduleSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="schedId">
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">Nama Kegiatan / Agenda</label>
+          <input type="text" id="schedTitle" required placeholder="Contoh: Rapat Koordinasi Anggaran" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Pilih Ruangan</label>
+            <select id="schedRoomId" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]"></select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Tanggal</label>
+            <input type="date" id="schedDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+          </div>
+        </div>
+
+        <!-- 24-HOUR DUAL SELECT TIME PICKERS -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Jam Mulai (Format 24 Jam)</label>
+            <div class="flex items-center gap-1.5">
+              <select id="schedStartHour" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-700"></select>
+              <span class="font-black text-slate-400">:</span>
+              <select id="schedStartMinute" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-700"></select>
+            </div>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Jam Selesai (Format 24 Jam)</label>
+            <div class="flex items-center gap-1.5">
+              <select id="schedEndHour" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-700"></select>
+              <span class="font-black text-slate-400">:</span>
+              <select id="schedEndMinute" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 font-bold text-slate-700"></select>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeScheduleModal()" class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+          <button type="submit" class="px-5 py-2 font-bold bg-[#00a3ff] text-white hover:bg-sky-600 rounded-xl transition shadow-md shadow-sky-500/20">Simpan Jadwal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL FORM RUANGAN -->
+  <div id="roomModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100">
+      <h3 id="roomModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Master Ruangan</h3>
+      <form onsubmit="handleRoomSubmit(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="roomId">
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">Nama Ruangan</label>
+          <input type="text" id="roomName" required placeholder="Contoh: Auditorium Utama" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">Lantai / Posisi</label>
+          <input type="text" id="roomFloor" required placeholder="Lantai 3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeRoomModal()" class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+          <button type="submit" class="px-5 py-2 font-bold bg-[#00a3ff] text-white hover:bg-sky-600 rounded-xl transition shadow-md shadow-sky-500/20">Simpan Ruangan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL GANTI PIN -->
+  <div id="changePinModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100">
+      <h3 class="font-extrabold text-base text-slate-800 mb-4">Ganti PIN Operator</h3>
+      <form onsubmit="handleChangePinSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">PIN Saat Ini</label>
+          <input type="password" id="currentPinInput" required maxlength="10" placeholder="••••" class="w-full text-center tracking-widest font-bold bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">PIN Baru</label>
+          <input type="password" id="newPinInput" required maxlength="10" placeholder="••••" class="w-full text-center tracking-widest font-bold bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div class="mt-6 flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeChangePinModal()" class="px-4 py-2 font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition">Batal</button>
+          <button type="submit" class="px-5 py-2 font-bold bg-[#00a3ff] text-white hover:bg-sky-600 rounded-xl transition shadow-md shadow-sky-500/20">Ubah PIN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <script>
+    // =========================================================================
+    // 1. STATE & KONFIGURASI SUPABASE (ARRAY KOSONG PRODUCTION)
+    // =========================================================================
+    let SUPABASE_URL = localStorage.getItem('SB_URL') || '';
+    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || '';
+    let supabaseClient = null;
+
+    let rooms = [];
+    let schedules = [];
+
+    let currentOperatorPin = '1234';
+    let runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
+    let currentLogoUrl = '';
+    let currentTvBgUrl = '';
+    let activeTab = 'dashboard';
+    let analyticsFilter = 'monthly';
+    let searchDebounceTimer = null;
+    let confirmCallback = null;
+
+    let chartBarInstance = null;
+    let chartLineInstance = null;
+    let chartPieInstance = null;
+
+    // =========================================================================
+    // 2. SUPABASE CLIENT & REALTIME SUBSCRIPTION
+    // =========================================================================
+    function initSupabase() {
+      if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          setupRealtimeSubscription();
+        } catch (e) {
+          console.error("Gagal inisialisasi Supabase client", e);
+        }
+      }
+    }
+
+    function setupRealtimeSubscription() {
+      if (!supabaseClient) return;
+      supabaseClient
+        .channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          fetchCloudData(true);
+        })
+        .subscribe();
+    }
+
+    async function fetchCloudData(silent = false) {
+      if (!supabaseClient) return;
+      if (!silent) showLoading('Sinkronisasi Database...');
+
+      try {
+        const { data: rData } = await supabaseClient.from('rooms').select('*').order('name');
+        if (rData) rooms = rData;
+
+        const { data: sData } = await supabaseClient.from('schedules').select('*').order('date', { ascending: false });
+        if (sData) {
+          schedules = sData.map(s => ({
+            id: s.id,
+            roomId: s.room_id,
+            roomName: s.room_name,
+            roomFloor: s.room_floor,
+            title: s.title,
+            date: s.date,
+            startTime: s.start_time,
+            endTime: s.end_time
+          }));
+        }
+
+        const { data: cData } = await supabaseClient.from('config').select('*');
+        if (cData) {
+          cData.forEach(c => {
+            if (c.key === 'runningText') runningTextMsg = c.value;
+            if (c.key === 'logoImg') currentLogoUrl = c.value;
+            if (c.key === 'tvBg') currentTvBgUrl = c.value;
+          });
+        }
+
+        const { data: oData } = await supabaseClient.from('operators').select('*').limit(1);
+        if (oData && oData.length > 0) currentOperatorPin = String(oData[0].pin);
+
+        updateUiState();
+      } catch (err) {
+        if (!silent) showToast(err.message, 'error');
+      } finally {
+        if (!silent) hideLoading();
+      }
+    }
+
+    function updateUiState() {
+      renderSchedules();
+      renderRooms();
+      renderRoomSelectOptions();
+      renderTvSignage();
+      renderDashboardCharts();
+      applyVisualAssets();
+    }
+
+    function applyVisualAssets() {
+      const elSide = document.getElementById('sidebarLogoWrapper');
+      const elLogin = document.getElementById('loginModalLogo');
+      const elTv = document.getElementById('tvLogoWrapper');
+      const elSet = document.getElementById('settingsLogoPreview');
+      const elMarquee = document.getElementById('tvMarqueeText');
+
+      if (elMarquee) elMarquee.innerText = runningTextMsg;
+
+      if (currentLogoUrl) {
+        const img = `<img src="${currentLogoUrl}" class="w-full h-full object-contain" alt="Logo">`;
+        if (elSide) elSide.innerHTML = img;
+        if (elLogin) elLogin.innerHTML = img;
+        if (elTv) elTv.innerHTML = img;
+        if (elSet) elSet.innerHTML = img;
+      }
+
+      if (currentTvBgUrl) {
+        const tv = document.getElementById('tvSignageView');
+        if (tv) tv.style.backgroundImage = `url(${currentTvBgUrl})`;
+      }
+    }
+
+    // =========================================================================
+    // 3. STATISTIK & 3 GRAFIK (BATANG, GARIS, PIE)
+    // =========================================================================
+    function setAnalyticsFilter(period) {
+      analyticsFilter = period;
+      ['Daily', 'Weekly', 'Monthly', 'Yearly'].forEach(p => {
+        const btn = document.getElementById(`btnFilter${p}`);
+        if (btn) {
+          if (p.toLowerCase() === period) {
+            btn.className = 'px-3 py-1.5 rounded-lg bg-white text-[#00a3ff] shadow-sm transition font-bold';
+          } else {
+            btn.className = 'px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-700 transition font-bold';
+          }
+        }
+      });
+      renderDashboardCharts();
+    }
+
+    function renderDashboardCharts() {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const curTimeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      let activeCount = 0;
+      const roomCounts = {};
+      rooms.forEach(r => { roomCounts[r.name] = 0; });
+
+      schedules.forEach(s => {
+        const sDate = String(s.date).split('T')[0];
+        if (sDate === todayStr && curTimeStr >= s.startTime && curTimeStr <= s.endTime) {
+          activeCount++;
+        }
+        if (roomCounts[s.roomName] !== undefined) {
+          roomCounts[s.roomName]++;
+        }
+      });
+
+      const elTotal = document.getElementById('dashTotalAgenda');
+      const elActive = document.getElementById('dashActiveAgenda');
+      const elTop = document.getElementById('dashTopRoom');
+
+      if (elTotal) elTotal.innerText = schedules.length;
+      if (elActive) elActive.innerText = activeCount;
+
+      let topRoom = '-';
+      let maxCount = -1;
+      for (const [rName, count] of Object.entries(roomCounts)) {
+        if (count > maxCount && count > 0) {
+          maxCount = count;
+          topRoom = `${rName} (${count}x)`;
+        }
+      }
+      if (elTop) elTop.innerText = topRoom;
+
+      const labels = Object.keys(roomCounts);
+      const dataCounts = Object.values(roomCounts);
+      const safeLabels = labels.length ? labels : ['Belum Ada Ruangan'];
+      const safeData = dataCounts.length ? dataCounts : [0];
+
+      // 1. CHART BATANG
+      const ctxBar = document.getElementById('barChart')?.getContext('2d');
+      if (ctxBar) {
+        if (chartBarInstance) chartBarInstance.destroy();
+        chartBarInstance = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: safeLabels,
+            datasets: [{
+              label: 'Frekuensi Kegiatan',
+              data: safeData,
+              backgroundColor: '#00a3ff',
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      }
+
+      // 2. CHART GARIS
+      const ctxLine = document.getElementById('lineChart')?.getContext('2d');
+      if (ctxLine) {
+        if (chartLineInstance) chartLineInstance.destroy();
+        chartLineInstance = new Chart(ctxLine, {
+          type: 'line',
+          data: {
+            labels: safeLabels,
+            datasets: [{
+              label: 'Tren Pemakaian',
+              data: safeData,
+              borderColor: '#0284c7',
+              backgroundColor: 'rgba(2, 132, 199, 0.1)',
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      }
+
+      // 3. CHART PIE
+      const ctxPie = document.getElementById('pieChart')?.getContext('2d');
+      if (ctxPie) {
+        if (chartPieInstance) chartPieInstance.destroy();
+        chartPieInstance = new Chart(ctxPie, {
+          type: 'pie',
+          data: {
+            labels: safeLabels,
+            datasets: [{
+              data: safeData,
+              backgroundColor: ['#00a3ff', '#38bdf8', '#7dd3fc', '#bae6fd', '#0369a1', '#0284c7']
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // 4. RENDER JADWAL & RUANGAN
+    // =========================================================================
+    function renderSchedules() {
+      const tbody = document.getElementById('scheduleTableBody');
+      const empty = document.getElementById('emptySchedule');
+      if (!tbody) return;
+
+      const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      const rFilter = document.getElementById('filterRoomSelect')?.value || '';
+
+      const filtered = schedules.filter(s => {
+        const matchQ = (s.title || '').toLowerCase().includes(q) || (s.roomName || '').toLowerCase().includes(q);
+        const matchR = rFilter ? s.roomId === rFilter : true;
+        return matchQ && matchR;
+      });
+
+      tbody.innerHTML = '';
+      if (filtered.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
+      }
+      if (empty) empty.classList.add('hidden');
+
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const nowTimeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      filtered.forEach(s => {
+        const sDate = String(s.date).split('T')[0];
+        let statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-600">Terjadwal</span>';
+
+        if (sDate === todayStr) {
+          if (nowTimeStr >= s.startTime && nowTimeStr <= s.endTime) {
+            statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-600 animate-pulse border border-emerald-200">Sedang Berlangsung</span>';
+          } else if (nowTimeStr > s.endTime) {
+            statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-400">Selesai</span>';
+          }
+        } else if (sDate < todayStr) {
+          statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-400">Selesai</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.innerHTML = `
+          <td class="py-4 px-6">${statusBadge}</td>
+          <td class="py-4 px-6 font-bold text-slate-800">${s.roomName} <span class="block text-[10px] text-slate-400 font-medium">${s.roomFloor || '-'}</span></td>
+          <td class="py-4 px-6 font-bold text-slate-800">${s.title}</td>
+          <td class="py-4 px-6 font-bold text-slate-700">${s.startTime} - ${s.endTime} WIB</td>
+          <td class="py-4 px-6 font-medium text-slate-500">${sDate}</td>
+          <td class="py-4 px-6 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="editSchedule('${s.id}')" class="p-1.5 rounded-lg hover:bg-sky-50 text-[#00a3ff] transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+              <button onclick="confirmDeleteSchedule('${s.id}')" class="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRooms() {
+      const tbody = document.getElementById('roomTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      rooms.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition';
+        tr.innerHTML = `
+          <td class="py-4 px-6 font-bold text-slate-800">${r.name}</td>
+          <td class="py-4 px-6 font-medium text-slate-600">${r.floor}</td>
+          <td class="py-4 px-6 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="editRoom('${r.id}')" class="p-1.5 rounded-lg hover:bg-sky-50 text-[#00a3ff] transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+              <button onclick="confirmDeleteRoom('${r.id}')" class="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 transition"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRoomSelectOptions() {
+      const sSelect = document.getElementById('schedRoomId');
+      const fSelect = document.getElementById('filterRoomSelect');
+      if (sSelect) {
+        const cur = sSelect.value;
+        sSelect.innerHTML = '<option value="">-- Pilih Ruangan --</option>' + rooms.map(r => `<option value="${r.id}">${r.name} (${r.floor})</option>`).join('');
+        if (cur) sSelect.value = cur;
+      }
+      if (fSelect) {
+        const curF = fSelect.value;
+        fSelect.innerHTML = '<option value="">Semua Ruangan</option>' + rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+        fSelect.value = curF;
+      }
+    }
+
+    // =========================================================================
+    // 5. TV SIGNAGE (WHITE GLASS CARDS, 06:30 & H-5 LOGIC)
+    // =========================================================================
+    function renderTvSignage() {
+      const container = document.getElementById('tvScheduleCards');
+      const empty = document.getElementById('emptyTvSignage');
+      const tvDateDisplay = document.getElementById('tvDateDisplay');
+      if (!container) return;
+
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const curMinutes = now.getHours() * 60 + now.getMinutes();
+
+      if (tvDateDisplay) {
+        tvDateDisplay.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      const todayScheds = schedules.filter(s => String(s.date).split('T')[0] === todayStr);
+      const groupedByRoom = {};
+      todayScheds.forEach(s => {
+        if (!groupedByRoom[s.roomId]) groupedByRoom[s.roomId] = [];
+        groupedByRoom[s.roomId].push(s);
+      });
+
+      const displayList = [];
+      Object.keys(groupedByRoom).forEach(rId => {
+        const roomAgenda = groupedByRoom[rId].sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+        roomAgenda.forEach((agenda, idx) => {
+          const [sH, sM] = agenda.startTime.split(':').map(Number);
+          const [eH, eM] = agenda.endTime.split(':').map(Number);
+          const startMin = sH * 60 + sM;
+          const endMin = eH * 60 + eM;
+
+          if (curMinutes > endMin) return;
+
+          let canShow = false;
+          if (idx === 0) {
+            canShow = (curMinutes >= 6 * 60 + 30);
+          } else {
+            canShow = (curMinutes >= startMin - 5);
+          }
+
+          if (canShow) {
+            const isOngoing = (curMinutes >= startMin && curMinutes <= endMin);
+            displayList.push({ ...agenda, isOngoing });
+          }
+        });
+      });
+
+      container.innerHTML = '';
+      if (displayList.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
+      }
+      if (empty) empty.classList.add('hidden');
+
+      displayList.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `rounded-3xl p-6 backdrop-blur-md border transition-all ${item.isOngoing ? 'bg-white/95 border-[#00a3ff] ring-4 ring-[#00a3ff]/30 shadow-2xl scale-[1.02]' : 'bg-white/90 border-slate-200/80 shadow-lg'}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${item.isOngoing ? 'bg-[#00a3ff] text-white animate-pulse' : 'bg-slate-100 text-slate-600'}">
+              ${item.isOngoing ? '<span class="w-2 h-2 rounded-full bg-white animate-ping"></span> Sedang Berlangsung' : 'Akan Datang'}
+            </span>
+            <span class="text-xs font-black text-[#00a3ff] tracking-wider">${item.startTime} - ${item.endTime} WIB</span>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 leading-snug mb-3">${item.title}</h2>
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+              <span class="font-extrabold text-slate-800">${item.roomName}</span>
+            </div>
+            <span class="font-bold text-slate-400">${item.roomFloor}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleTvFullscreen() {
+      const tvEl = document.getElementById('tvSignageView');
+      const enterIcon = document.getElementById('iconFullscreenEnter');
+      const exitIcon = document.getElementById('iconFullscreenExit');
+
+      try {
+        if (!document.fullscreenElement) {
+          const req = tvEl.requestFullscreen || tvEl.webkitRequestFullscreen || tvEl.msRequestFullscreen;
+          if (req) {
+            req.call(tvEl).catch(() => showToast('Fullscreen diblokir peramban', 'info'));
+          }
+          if (enterIcon) enterIcon.classList.add('hidden');
+          if (exitIcon) exitIcon.classList.remove('hidden');
+        } else {
+          const ext = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+          if (ext) {
+            ext.call(document).catch(() => {});
+          }
+          if (enterIcon) enterIcon.classList.remove('hidden');
+          if (exitIcon) exitIcon.classList.add('hidden');
+        }
+      } catch (err) {
+        showToast('Mode Layar Penuh tidak didukung container ini', 'info');
+      }
+    }
+
+    // =========================================================================
+    // 6. CRUD HANDLERS
+    // =========================================================================
+    function initTimeSelects() {
+      const hOptions = Array.from({length: 24}, (_, i) => `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`).join('');
+      const mOptions = Array.from({length: 60}, (_, i) => `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`).join('');
+
+      ['schedStartHour', 'schedEndHour'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = hOptions;
+      });
+      ['schedStartMinute', 'schedEndMinute'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = mOptions;
+      });
+    }
+
+    async function handleScheduleSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('schedId').value || '';
+      const roomId = document.getElementById('schedRoomId').value;
+      const room = rooms.find(r => r.id === roomId);
+
+      const sH = document.getElementById('schedStartHour').value;
+      const sM = document.getElementById('schedStartMinute').value;
+      const eH = document.getElementById('schedEndHour').value;
+      const eM = document.getElementById('schedEndMinute').value;
+
+      const newSched = {
+        id: id || undefined,
+        roomId: roomId,
+        roomName: room ? room.name : '',
+        roomFloor: room ? room.floor : '',
+        title: document.getElementById('schedTitle').value.trim(),
+        date: document.getElementById('schedDate').value,
+        startTime: `${sH}:${sM}`,
+        endTime: `${eH}:${eM}`
+      };
+
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        return;
+      }
+
+      showLoading('Menyimpan Jadwal...');
+      const payload = {
+        room_id: newSched.roomId,
+        room_name: newSched.roomName,
+        room_floor: newSched.roomFloor,
+        title: newSched.title,
+        date: newSched.date,
+        start_time: newSched.startTime,
+        end_time: newSched.endTime
+      };
+      if (id) payload.id = id;
+
+      const { error } = await supabaseClient.from('schedules').upsert(payload);
+      hideLoading();
+
+      if (error) {
+        showToast('Gagal menyimpan jadwal: ' + error.message, 'error');
+        return;
+      }
+
+      closeScheduleModal();
+      showToast('Jadwal berhasil disimpan ke Supabase!', 'success');
+      fetchCloudData(true);
+    }
+
+    function confirmDeleteSchedule(id) {
+      showConfirmModal('Hapus Jadwal', 'Apakah Anda yakin ingin menghapus jadwal ini secara permanen?', async () => {
+        if (!supabaseClient) {
+          showToast('Database Supabase belum terhubung.', 'error');
+          return;
+        }
+        showLoading('Menghapus Jadwal...');
+        const { error } = await supabaseClient.from('schedules').delete().eq('id', id);
+        hideLoading();
+        if (error) {
+          showToast('Gagal menghapus: ' + error.message, 'error');
+          return;
+        }
+        showToast('Jadwal dihapus.', 'success');
+        fetchCloudData(true);
+      });
+    }
+
+    async function handleRoomSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('roomId').value || '';
+      const newRoom = {
+        name: document.getElementById('roomName').value.trim(),
+        floor: document.getElementById('roomFloor').value.trim()
+      };
+
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        return;
+      }
+
+      showLoading('Menyimpan Ruangan...');
+      const payload = { name: newRoom.name, floor: newRoom.floor };
+      if (id) payload.id = id;
+
+      const { error } = await supabaseClient.from('rooms').upsert(payload);
+      hideLoading();
+
+      if (error) {
+        showToast('Gagal menyimpan ruangan: ' + error.message, 'error');
+        return;
+      }
+
+      closeRoomModal();
+      showToast('Master Ruangan berhasil disimpan ke Supabase!', 'success');
+      fetchCloudData(true);
+    }
+
+    function confirmDeleteRoom(id) {
+      showConfirmModal('Hapus Ruangan', 'Menghapus master ruangan ini akan menghapus jadwal terkait. Lanjutkan?', async () => {
+        if (!supabaseClient) {
+          showToast('Database Supabase belum terhubung.', 'error');
+          return;
+        }
+        showLoading('Menghapus Ruangan...');
+        const { error } = await supabaseClient.from('rooms').delete().eq('id', id);
+        hideLoading();
+        if (error) {
+          showToast('Gagal menghapus ruangan: ' + error.message, 'error');
+          return;
+        }
+        showToast('Master ruangan dihapus.', 'success');
+        fetchCloudData(true);
+      });
+    }
+
+    async function saveRunningText() {
+      const val = document.getElementById('runningTextInput').value;
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung.', 'error');
+        return;
+      }
+      showLoading('Menyimpan Running Text...');
+      const { error } = await supabaseClient.from('config').upsert({ key: 'runningText', value: val });
+      hideLoading();
+      if (error) {
+        showToast('Gagal menyimpan running text: ' + error.message, 'error');
+        return;
+      }
+      runningTextMsg = val;
+      const el = document.getElementById('tvMarqueeText');
+      if (el) el.innerText = runningTextMsg;
+      showToast('Teks berjalan berhasil diperbarui!', 'success');
+    }
+
+    // =========================================================================
+    // 7. KOMPRESI KANVAS GAMBAR LOGO & BACKGROUND TV
+    // =========================================================================
+    function triggerLogoUpload() { document.getElementById('logoFileInput')?.click(); }
+    function handleLogoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      showLoading('Mengompresi Logo...');
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = async function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const maxW = 300;
+          if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64 = canvas.toDataURL('image/png');
+
+          if (supabaseClient) {
+            showLoading('Menyimpan ke Database...');
+            const { error } = await supabaseClient.from('config').upsert({ key: 'logoImg', value: base64 });
+            if (error) showToast(error.message, 'error');
+          }
+          currentLogoUrl = base64;
+          applyVisualAssets();
+          hideLoading();
+          showToast('Logo instansi berhasil diperbarui!', 'success');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function triggerBackgroundUpload() { document.getElementById('bgFileInput')?.click(); }
+    function handleBackgroundUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      showLoading('Mengompresi Foto Latar...');
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = async function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const maxW = 800;
+          if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64 = canvas.toDataURL('image/jpeg', 0.7);
+
+          if (supabaseClient) {
+            showLoading('Menyimpan ke Database...');
+            const { error } = await supabaseClient.from('config').upsert({ key: 'tvBg', value: base64 });
+            if (error) showToast(error.message, 'error');
+          }
+          currentTvBgUrl = base64;
+          applyVisualAssets();
+          hideLoading();
+          showToast('Foto latar TV berhasil diperbarui!', 'success');
+        };
+        img.src = evt.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function handleChangePinSubmit(e) {
+      e.preventDefault();
+      const cur = document.getElementById('currentPinInput').value;
+      const nw = document.getElementById('newPinInput').value;
+      if (cur !== currentOperatorPin) {
+        showToast('PIN Saat Ini Tidak Cocok!', 'error');
+        return;
+      }
+      if (supabaseClient) {
+        showLoading('Mengubah PIN...');
+        const { error } = await supabaseClient.from('operators').update({ pin: nw }).neq('id', '00000000-0000-0000-0000-000000000000');
+        hideLoading();
+        if (error) { showToast(error.message, 'error'); return; }
+      }
+      currentOperatorPin = nw;
+      closeChangePinModal();
+      showToast('PIN Operator Berhasil Diperbarui!', 'success');
+    }
+
+    // =========================================================================
+    // 8. MODAL & NAVIGATION HELPERS
+    // =========================================================================
+    function switchTab(tabId) {
+      activeTab = tabId;
+      ['dashboard', 'jadwal', 'ruangan', 'runningText'].forEach(t => {
+        const sec = document.getElementById(`tab-${t}`);
+        const btn = document.getElementById(`nav-${t}`);
+        if (sec) sec.style.display = (t === tabId) ? 'block' : 'none';
+        if (btn) {
+          if (t === tabId) {
+            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-sky-50 text-[#00a3ff] transition font-bold';
+          } else {
+            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-50 hover:text-slate-700 transition font-bold';
+          }
+        }
+      });
+
+      const pTitle = document.getElementById('pageTitle');
+      const pSub = document.getElementById('pageSubtitle');
+      if (tabId === 'dashboard') {
+        pTitle.innerText = 'DASHBOARD & STATISTIK';
+        pSub.innerText = 'Analitik pemanfaatan ruangan secara komprehensif';
+        renderDashboardCharts();
+      } else if (tabId === 'jadwal') {
+        pTitle.innerText = 'JADWAL PEMAKAIAN RUANGAN';
+        pSub.innerText = 'Kelola dan pantau alokasi ruangan & kelas secara real-time';
+        renderSchedules();
+      } else if (tabId === 'ruangan') {
+        pTitle.innerText = 'MASTER RUANGAN';
+        pSub.innerText = 'Kelola daftar ruangan dan lantai lokasi';
+        renderRooms();
+      } else if (tabId === 'runningText') {
+        pTitle.innerText = 'PENGATURAN DISPLAY TV';
+        pSub.innerText = 'Kustomisasi pesan teks berjalan dan aset visual signage';
+        document.getElementById('runningTextInput').value = runningTextMsg;
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const pin = document.getElementById('loginPinInput').value;
+      if (pin === currentOperatorPin) {
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'flex';
+        showToast('Berhasil masuk ke Dashboard', 'success');
+        updateUiState();
+      } else {
+        showToast('PIN Operator Salah!', 'error');
+      }
+    }
+
+    function handleLogout() {
+      document.getElementById('mainApp').style.display = 'none';
+      document.getElementById('loginView').style.display = 'flex';
+      document.getElementById('loginPinInput').value = '';
+    }
+
+    function openTvSignageModal() {
+      document.getElementById('tvSignageView').style.display = 'flex';
+      renderTvSignage();
+    }
+    function closeTvSignageModal() {
+      if (document.fullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+      document.getElementById('tvSignageView').style.display = 'none';
+    }
+
+    function openScheduleModal() {
+      document.getElementById('schedId').value = '';
+      document.getElementById('schedTitle').value = '';
+      document.getElementById('schedDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('schedStartHour').value = '08';
+      document.getElementById('schedStartMinute').value = '00';
+      document.getElementById('schedEndHour').value = '10';
+      document.getElementById('schedEndMinute').value = '00';
+      document.getElementById('scheduleModalTitle').innerText = 'Tambah Jadwal Ruangan';
+      document.getElementById('scheduleModal').style.display = 'flex';
+    }
+    function editSchedule(id) {
+      const s = schedules.find(item => item.id === id);
+      if (!s) return;
+      document.getElementById('schedId').value = s.id;
+      document.getElementById('schedTitle').value = s.title;
+      document.getElementById('schedRoomId').value = s.roomId;
+      document.getElementById('schedDate').value = String(s.date).split('T')[0];
+      const [sH, sM] = (s.startTime || '08:00').split(':');
+      const [eH, eM] = (s.endTime || '10:00').split(':');
+      document.getElementById('schedStartHour').value = sH || '08';
+      document.getElementById('schedStartMinute').value = sM || '00';
+      document.getElementById('schedEndHour').value = eH || '10';
+      document.getElementById('schedEndMinute').value = eM || '00';
+      document.getElementById('scheduleModalTitle').innerText = 'Edit Jadwal Ruangan';
+      document.getElementById('scheduleModal').style.display = 'flex';
+    }
+    function closeScheduleModal() { document.getElementById('scheduleModal').style.display = 'none'; }
+
+    function openRoomModal() {
+      document.getElementById('roomId').value = '';
+      document.getElementById('roomName').value = '';
+      document.getElementById('roomFloor').value = 'Lantai 1';
+      document.getElementById('roomModalTitle').innerText = 'Tambah Master Ruangan';
+      document.getElementById('roomModal').style.display = 'flex';
+    }
+    function editRoom(id) {
+      const r = rooms.find(item => item.id === id);
+      if (!r) return;
+      document.getElementById('roomId').value = r.id;
+      document.getElementById('roomName').value = r.name;
+      document.getElementById('roomFloor').value = r.floor;
+      document.getElementById('roomModalTitle').innerText = 'Edit Master Ruangan';
+      document.getElementById('roomModal').style.display = 'flex';
+    }
+    function closeRoomModal() { document.getElementById('roomModal').style.display = 'none'; }
+
+    function openChangePinModal() {
+      document.getElementById('currentPinInput').value = '';
+      document.getElementById('newPinInput').value = '';
+      document.getElementById('changePinModal').style.display = 'flex';
+    }
+    function closeChangePinModal() { document.getElementById('changePinModal').style.display = 'none'; }
+
+    function openSupabaseConfigModal() {
+      document.getElementById('inputSbUrl').value = SUPABASE_URL;
+      document.getElementById('inputSbKey').value = SUPABASE_ANON_KEY;
+      document.getElementById('supabaseConfigModal').style.display = 'flex';
+    }
+    function closeSupabaseConfigModal() { document.getElementById('supabaseConfigModal').style.display = 'none'; }
+    function saveSupabaseConfig() {
+      const url = document.getElementById('inputSbUrl').value.trim();
+      const key = document.getElementById('inputSbKey').value.trim();
+      SUPABASE_URL = url;
+      SUPABASE_ANON_KEY = key;
+      localStorage.setItem('SB_URL', url);
+      localStorage.setItem('SB_KEY', key);
+      closeSupabaseConfigModal();
+      initSupabase();
+      fetchCloudData();
+      showToast('Koneksi Supabase Disimpan!', 'success');
+    }
+
+    function showConfirmModal(title, msg, onConfirm) {
+      document.getElementById('confirmTitle').innerText = title;
+      document.getElementById('confirmMsg').innerText = msg;
+      confirmCallback = onConfirm;
+      document.getElementById('confirmModal').style.display = 'flex';
+    }
+    function closeConfirmModal(isConfirmed) {
+      document.getElementById('confirmModal').style.display = 'none';
+      if (isConfirmed && typeof confirmCallback === 'function') confirmCallback();
+      confirmCallback = null;
+    }
+
+    function handleSearchDebounced() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => { renderSchedules(); }, 300);
+    }
+
+    function showLoading(msg = 'Memuat...') {
+      const el = document.getElementById('loadingOverlay');
+      const txt = document.getElementById('loadingText');
+      if (txt) txt.innerText = msg;
+      if (el) el.style.display = 'flex';
+    }
+    function hideLoading() {
+      const el = document.getElementById('loadingOverlay');
+      if (el) el.style.display = 'none';
+    }
+    function showToast(msg, type = 'info') {
+      const c = document.getElementById('toastContainer');
+      if (!c) return;
+      const t = document.createElement('div');
+      t.className = `px-4 py-3 rounded-2xl text-xs font-bold text-white shadow-xl flex items-center gap-2 transform transition-all duration-300 pointer-events-auto ${type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`;
+      t.innerHTML = `<span>${msg}</span>`;
+      c.appendChild(t);
+      setTimeout(() => { t.remove(); }, 4000);
+    }
+
+    // =========================================================================
+    // 9. INITIALIZER
+    // =========================================================================
+    setInterval(() => {
+      const now = new Date();
+      const clock = document.getElementById('tvClock');
+      if (clock) {
+        clock.innerText = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      }
+      renderTvSignage();
+    }, 1000);
+
+    window.onload = () => {
+      initTimeSelects();
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        initSupabase();
+        fetchCloudData();
+      } else {
+        updateUiState();
+        hideLoading();
+      }
+    };
+  </script>
+</body>
+</html>
