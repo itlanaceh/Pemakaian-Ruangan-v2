@@ -535,10 +535,16 @@
 
   <script>
     // =========================================================================
-    // 1. STATE & KONFIGURASI SUPABASE & APP
+    // 1. KONFIGURASI SUPABASE CLOUD OTOMATIS (ZERO-CONFIG MULTI-DEVICE)
     // =========================================================================
-    let SUPABASE_URL = localStorage.getItem('SB_URL') || '';
-    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || '';
+    // Masukkan Project URL dan Anon Key Supabase Anda di bawah ini agar semua perangkat
+    // (Smart TV, HP, Laptop lain) otomatis langsung terhubung tanpa perlu input link lagi.
+    const EMBEDDED_SUPABASE_URL = "https://lffmweclasqqfjsirmwm.supabase.co"; // Ganti dengan URL Supabase Anda
+    const EMBEDDED_SUPABASE_KEY = "sb_publishable_nd0YjPZRowl74Fbz7BOIAQ_xZqKUNeV";              // Ganti dengan Anon Key Supabase Anda
+
+    // Prioritaskan localStorage jika pernah diedit via UI, atau gunakan embedded constant
+    let SUPABASE_URL = localStorage.getItem('SB_URL') || (EMBEDDED_SUPABASE_URL.includes('YOUR_PROJECT_ID') ? '' : EMBEDDED_SUPABASE_URL);
+    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || (EMBEDDED_SUPABASE_KEY.includes('YOUR_SUPABASE') ? '' : EMBEDDED_SUPABASE_KEY);
     let supabaseClient = null;
 
     const todayIsoDate = new Date().toISOString().split('T')[0];
@@ -579,22 +585,37 @@
     function initSupabase() {
       if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
         try {
-          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false }
+          });
           setupRealtimeSubscription();
         } catch (e) {
-          console.error("Gagal inisialisasi Supabase client", e);
+          console.warn("Gagal inisialisasi Supabase client realtime, beralih ke REST polling:", e);
         }
       }
     }
 
     function setupRealtimeSubscription() {
       if (!supabaseClient) return;
-      supabaseClient
-        .channel('public-db-changes')
-        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-          fetchCloudData(true);
-        })
-        .subscribe();
+      try {
+        // Cek ketersediaan WebSocket di window sebelum melakukan koneksi
+        if (typeof WebSocket === 'undefined') {
+          console.info("WebSocket tidak tersedia di container ini. Mode REST Polling otomatis aktif.");
+          return;
+        }
+        supabaseClient
+          .channel('public-db-changes')
+          .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+            fetchCloudData(true);
+          })
+          .subscribe((status) => {
+            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+              console.info("Realtime WebSocket channel error/timeout, sistem menggunakan REST Polling.");
+            }
+          });
+      } catch (e) {
+        console.warn("WebSocket tidak diizinkan pada environment saat ini, menggunakan mode REST polling otomatis.", e);
+      }
     }
 
     async function fetchCloudData(silent = false) {
@@ -1027,7 +1048,7 @@
 
     async function handleScheduleSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('schedId').value || '';
+      const id = document.getElementById('schedId').value || 'SCH_' + Date.now();
       const roomId = document.getElementById('schedRoomId').value;
       const room = rooms.find(r => r.id === roomId);
 
@@ -1037,7 +1058,7 @@
       const eM = document.getElementById('schedEndMinute').value;
 
       const newSched = {
-        id: id || undefined,
+        id: id,
         roomId: roomId,
         roomName: room ? room.name : '',
         roomFloor: room ? room.floor : '',
@@ -1048,12 +1069,13 @@
       };
 
       if (!supabaseClient) {
-        showToast('Database belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
         return;
       }
 
       showLoading('Menyimpan Jadwal...');
       const payload = {
+        id: id,
         room_id: newSched.roomId,
         room_name: newSched.roomName,
         room_floor: newSched.roomFloor,
@@ -1062,7 +1084,6 @@
         start_time: newSched.startTime,
         end_time: newSched.endTime
       };
-      if (id) payload.id = id;
 
       const { error } = await supabaseClient.from('schedules').upsert(payload);
       hideLoading();
@@ -1073,14 +1094,14 @@
       }
 
       closeScheduleModal();
-      showToast('Jadwal berhasil disimpan', 'success');
+      showToast('Jadwal berhasil disimpan ke Supabase!', 'success');
       fetchCloudData(true);
     }
 
     function confirmDeleteSchedule(id) {
       showConfirmModal('Hapus Jadwal', 'Apakah Anda yakin ingin menghapus jadwal ini secara permanen?', async () => {
         if (!supabaseClient) {
-          showToast('Database belum terhubung.', 'error');
+          showToast('Database Supabase belum terhubung.', 'error');
           return;
         }
         showLoading('Menghapus Jadwal...');
@@ -1097,20 +1118,20 @@
 
     async function handleRoomSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('roomId').value || '';
+      const id = document.getElementById('roomId').value || 'ROOM_' + Date.now();
       const newRoom = {
+        id: id,
         name: document.getElementById('roomName').value.trim(),
         floor: document.getElementById('roomFloor').value.trim()
       };
 
       if (!supabaseClient) {
-        showToast('Database belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
         return;
       }
 
       showLoading('Menyimpan Ruangan...');
-      const payload = { name: newRoom.name, floor: newRoom.floor };
-      if (id) payload.id = id;
+      const payload = { id: id, name: newRoom.name, floor: newRoom.floor };
 
       const { error } = await supabaseClient.from('rooms').upsert(payload);
       hideLoading();
@@ -1121,14 +1142,14 @@
       }
 
       closeRoomModal();
-      showToast('Master Ruangan berhasil', 'success');
+      showToast('Master Ruangan berhasil disimpan ke Supabase!', 'success');
       fetchCloudData(true);
     }
 
     function confirmDeleteRoom(id) {
       showConfirmModal('Hapus Ruangan', 'Menghapus master ruangan ini akan menghapus jadwal terkait. Lanjutkan?', async () => {
         if (!supabaseClient) {
-          showToast('Database belum terhubung.', 'error');
+          showToast('Database Supabase belum terhubung.', 'error');
           return;
         }
         showLoading('Menghapus Ruangan...');
@@ -1146,7 +1167,7 @@
     async function saveRunningText() {
       const val = document.getElementById('runningTextInput').value;
       if (!supabaseClient) {
-        showToast('Database belum terhubung.', 'error');
+        showToast('Database Supabase belum terhubung.', 'error');
         return;
       }
       showLoading('Menyimpan Running Text...');
@@ -1374,8 +1395,8 @@
     function closeChangePinModal() { document.getElementById('changePinModal').style.display = 'none'; }
 
     function openSupabaseConfigModal() {
-      document.getElementById('inputSbUrl').value = SUPABASE_URL;
-      document.getElementById('inputSbKey').value = SUPABASE_ANON_KEY;
+      document.getElementById('inputSbUrl').value = SUPABASE_URL || EMBEDDED_SUPABASE_URL;
+      document.getElementById('inputSbKey').value = SUPABASE_ANON_KEY || EMBEDDED_SUPABASE_KEY;
       document.getElementById('supabaseConfigModal').style.display = 'flex';
     }
     function closeSupabaseConfigModal() { document.getElementById('supabaseConfigModal').style.display = 'none'; }
@@ -1389,7 +1410,7 @@
       closeSupabaseConfigModal();
       initSupabase();
       fetchCloudData();
-      showToast('Koneksi Disimpan!', 'success');
+      showToast('Koneksi Supabase Disimpan!', 'success');
     }
 
     function showConfirmModal(title, msg, onConfirm) {
@@ -1440,6 +1461,13 @@
       }
       renderTvSignage();
     }, 1000);
+
+    // Auto REST Polling setiap 4 detik sebagai cadangan andal jika WebSocket diblokir sandbox/CSP
+    setInterval(() => {
+      if (supabaseClient) {
+        fetchCloudData(true);
+      }
+    }, 4000);
 
     window.onload = () => {
       initTimeSelects();
