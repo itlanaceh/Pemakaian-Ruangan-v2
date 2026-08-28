@@ -3,17 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Jadwal Pemakaian Ruangan & TV Signage</title>
-  <!-- Favicon Inline SVG Data URI -->
+  <title>Sistem Jadwal Pemakaian Ruangan</title>
   <link rel="icon" id="dynamicFavicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300a3ff'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/></svg>">
-  
-  <!-- CDNs: Tailwind CSS, Chart.js, Poppins Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  
   <script>
     tailwind.config = {
       theme: {
@@ -45,38 +42,18 @@
     .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-    .shimmer-loading {
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-    }
-    @keyframes shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased font-sans">
 
-  <!-- ========================================================================= -->
-  <!-- 1. Z-INDEX OVERLAYS & NOTIFICATIONS (Strict Hierarchy)                    -->
-  <!-- ========================================================================= -->
-  
-  <!-- LOADING OVERLAY (z-[9999]) -->
+  <!-- OVERLAY LOADING (z-[9999]) -->
   <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
     <div class="w-14 h-14 border-4 border-white/20 border-t-[#00a3ff] rounded-full animate-spin"></div>
-    <p id="loadingText" class="mt-4 font-bold text-sm tracking-wide">Sinkronisasi Cloud...</p>
+    <p id="loadingText" class="mt-4 font-bold text-sm tracking-wide">Memuat Sistem...</p>
   </div>
 
   <!-- TOAST CONTAINER (z-[2000]) -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[2000] flex flex-col gap-3 pointer-events-none"></div>
-
-  <!-- SMART UI WARNING: URL BACKEND BELUM TERHUBUNG (z-[2000]) -->
-  <div id="urlWarningBanner" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[2000] hidden bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-xl border border-amber-400 font-bold text-xs items-center gap-3">
-    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-    <span>URL Backend Google Apps Script belum terhubung. Silakan konfigurasi endpoint cloud.</span>
-    <button onclick="openGasConfigModal()" class="px-3 py-1 bg-white text-amber-700 rounded-lg text-xs font-black shadow-sm hover:bg-amber-50 transition">Hubungkan</button>
-  </div>
 
   <!-- MODAL KONFIRMASI (z-[1000]) -->
   <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
@@ -93,39 +70,43 @@
     </div>
   </div>
 
-  <!-- MODAL KONFIGURASI DATABASE GAS (z-[1000]) -->
-  <div id="gasConfigModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
+  <!-- MODAL KONFIGURASI SUPABASE (z-[1000]) -->
+  <div id="supabaseConfigModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 transform transition-all">
       <div class="flex items-center gap-3 mb-4">
-        <div class="w-10 h-10 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16"/></svg>
         </div>
         <div>
-          <h3 class="font-bold text-lg text-slate-800">Koneksi Backend Apps Script</h3>
-          <p class="text-xs text-slate-400">Endpoint Web App Google Apps Script</p>
+          <h3 class="font-bold text-lg text-slate-800">Koneksi Database Supabase</h3>
+          <p class="text-xs text-slate-400">Tersimpan permanen sekali konfigurasi</p>
         </div>
       </div>
       <div class="space-y-3">
-        <label class="block text-xs font-bold text-slate-600">URL Web App (/exec)</label>
-        <textarea id="inputGasUrl" rows="3" placeholder="https://script.google.com/macros/s/.../exec" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]"></textarea>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Project URL</label>
+          <input type="text" id="inputSbUrl" placeholder="https://xyzcompany.supabase.co" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Anon Public API Key</label>
+          <textarea id="inputSbKey" rows="2" placeholder="eyJhbGciOiJIUzI1NiIsInR5..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]"></textarea>
+        </div>
       </div>
       <div class="mt-6 flex justify-end gap-2">
-        <button onclick="closeGasConfigModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition">Batal</button>
-        <button onclick="saveGasConfigUrl()" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00a3ff] text-white hover:bg-sky-600 transition shadow-md shadow-sky-500/20">Simpan & Sinkronkan</button>
+        <button onclick="closeSupabaseConfigModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 transition">Batal</button>
+        <button onclick="saveSupabaseConfig()" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#00a3ff] text-white hover:bg-sky-600 transition shadow-md shadow-sky-500/20">Simpan & Hubungkan</button>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 2. AUTH VIEW (LOGIN SCREEN)                                              -->
-  <!-- ========================================================================= -->
+  <!-- AUTH VIEW (LOGIN) -->
   <div id="loginView" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
     <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center">
       <div id="loginModalLogo" class="w-16 h-16 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center mx-auto mb-4 border border-sky-100 overflow-hidden">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
       </div>
       <h1 class="font-extrabold text-xl text-slate-800">Portal Operator Ruangan</h1>
-      <p class="text-xs text-slate-400 font-medium mb-6">Masukkan PIN Operator untuk mengelola jadwal dan display TV</p>
+      <p class="text-xs text-slate-400 font-medium mb-6">Masukkan PIN Operator untuk mengelola jadwal dan tampilan TV</p>
 
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-left">
         <div>
@@ -135,22 +116,16 @@
         <button type="submit" class="w-full py-3 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold rounded-2xl text-sm transition shadow-lg shadow-sky-500/20">Masuk Dashboard</button>
       </form>
 
-      <div class="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-2">
+      <div class="mt-6 pt-6 border-t border-slate-100">
         <button onclick="openTvSignageModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
           Buka Display TV (Mode Publik)
-        </button>
-        <button onclick="openGasConfigModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition">
-          <svg class="w-3.5 h-3.5 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          Konfigurasi Endpoint Cloud
         </button>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 3. MAIN OPERATOR DASHBOARD (AUTH GUARD: DISPLAY NONE DEFAULT)             -->
-  <!-- ========================================================================= -->
+  <!-- MAIN OPERATOR DASHBOARD -->
   <div id="mainApp" style="display: none;" class="min-h-screen flex bg-slate-50">
     <!-- SIDEBAR -->
     <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 shrink-0">
@@ -161,7 +136,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
           </div>
           <div>
-            <h2 class="font-extrabold text-sm text-slate-800 leading-tight">MANAJEMEN RUANG</h2>
+            <h2 class="font-extrabold text-sm text-slate-800 leading-tight">ADMIN</h2>
             <span class="inline-block mt-0.5 px-2 py-0.5 bg-sky-50 text-[#00a3ff] font-bold text-[10px] rounded-full">Operator System</span>
           </div>
         </div>
@@ -197,7 +172,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             Buka Display TV
           </button>
-          <button onclick="openGasConfigModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition">
+          <button onclick="openSupabaseConfigModal()" class="w-full py-2 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition">
             <svg class="w-4 h-4 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             Koneksi Database
           </button>
@@ -220,8 +195,8 @@
         </div>
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-600">
-            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="syncTimestamp">Sinkronisasi Realtime</span>
+            <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="syncTimestamp">Realtime Sync</span>
           </div>
           <button onclick="openScheduleModal()" class="px-5 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -230,10 +205,10 @@
         </div>
       </header>
 
-      <!-- BODY CONTENT (Bento Grid Architecture) -->
+      <!-- BODY CONTENT -->
       <div class="p-8 space-y-6">
 
-        <!-- TAB 1: DASHBOARD STATISTIK -->
+        <!-- TAB DASHBOARD STATISTIK -->
         <section id="tab-dashboard" class="space-y-6">
           <!-- TOP STAT CARDS -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -290,7 +265,7 @@
           </div>
         </section>
 
-        <!-- TAB 2: JADWAL RUANGAN (TABEL & SEARCH DEBOUNCE) -->
+        <!-- TAB JADWAL RUANGAN (TABEL & PENCARIAN) -->
         <section id="tab-jadwal" class="space-y-6 hidden">
           <!-- FILTER & SEARCH ROW -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
@@ -328,7 +303,7 @@
           </div>
         </section>
 
-        <!-- TAB 3: MASTER RUANGAN -->
+        <!-- TAB MASTER RUANGAN -->
         <section id="tab-ruangan" class="space-y-6 hidden">
           <div class="flex items-center justify-between">
             <div>
@@ -356,7 +331,7 @@
           </div>
         </section>
 
-        <!-- TAB 4: RUNNING TEXT & ASET VISUAL -->
+        <!-- TAB RUNNING TEXT & ASET VISUAL -->
         <section id="tab-runningText" class="space-y-6 hidden">
           <div>
             <h2 class="text-base font-extrabold text-slate-800">Pengaturan Display & Aset Visual TV</h2>
@@ -411,9 +386,7 @@
     </main>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 4. TV SIGNAGE FULLSCREEN DISPLAY (White Glass Cards, 06:30 & H-5 Engine)  -->
-  <!-- ========================================================================= -->
+  <!-- TV SIGNAGE FULLSCREEN DISPLAY -->
   <div id="tvSignageView" style="display: none;" class="fixed inset-0 z-[1000] bg-slate-900 bg-cover bg-center flex flex-col justify-between select-none">
     <!-- TV HEADER -->
     <header class="bg-slate-900/60 backdrop-blur-md px-10 py-5 border-b border-white/10 flex items-center justify-between text-white">
@@ -468,11 +441,7 @@
     </footer>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 5. MODAL FORMS (Pure 24-Hour Select, Room, Change PIN)                    -->
-  <!-- ========================================================================= -->
-
-  <!-- MODAL FORM JADWAL -->
+  <!-- MODAL FORM JADWAL (24-JAM MURNI) -->
   <div id="scheduleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100">
       <h3 id="scheduleModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Jadwal Ruangan</h3>
@@ -564,22 +533,32 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- 6. JAVASCRIPT APPLICATION CORE (PRODUCTION COMPLETE)                      -->
-  <!-- ========================================================================= -->
   <script>
     // =========================================================================
-    // 1. STATE & KONFIGURASI DATABASE
+    // 1. STATE & KONFIGURASI SUPABASE & APP
     // =========================================================================
-    // *************************************************************************
-    // PLACEHOLDER URL BACKEND GOOGLE APPS SCRIPT (GAS)
-    // Silakan ganti nilai di bawah atau konfigurasi melalui tombol di antarmuka
-    // *************************************************************************
-    let GAS_ENDPOINT_URL = localStorage.getItem('GAS_ENDPOINT_URL') || '';
+    let SUPABASE_URL = localStorage.getItem('SB_URL') || '';
+    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || '';
+    let supabaseClient = null;
 
-    // ARRAY UTAMA BERSIH DARI DATA DUMMY (PRODUCTION READY)
-    let rooms = [];
-    let schedules = [];
+    const todayIsoDate = new Date().toISOString().split('T')[0];
+
+    let rooms = [
+      { id: 'ROOM_103', name: 'Ruang 103', floor: 'Lantai 1' }
+    ];
+
+    let schedules = [
+      {
+        id: 'SCH_TEST_01',
+        roomId: 'ROOM_103',
+        roomName: 'Ruang 103',
+        roomFloor: 'Lantai 1',
+        title: 'Pengenalan materi',
+        date: todayIsoDate,
+        startTime: '10:00',
+        endTime: '11:30'
+      }
+    ];
 
     let currentOperatorPin = '1234';
     let runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
@@ -595,86 +574,69 @@
     let chartPieInstance = null;
 
     // =========================================================================
-    // 2. HELPER API DENGAN REDIRECT FOLLOW & VALIDASI ERROR
+    // 2. SUPABASE CLIENT & REALTIME SUBSCRIPTION
     // =========================================================================
-    async function callGasApi(action, payload = {}) {
-      if (!GAS_ENDPOINT_URL) {
-        throw new Error('Tautan Google Apps Script belum dikonfigurasikan di menu Koneksi Database.');
-      }
-      
-      let retryCount = 0;
-      const maxRetries = 2;
-
-      while (retryCount <= maxRetries) {
+    function initSupabase() {
+      if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
         try {
-          const response = await fetch(GAS_ENDPOINT_URL, {
-            method: 'POST',
-            redirect: 'follow', // KEWAJIBAN FETCH REDIRECT (ANTI-CORS)
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: action, ...payload })
-          });
-
-          const resText = await response.text();
-          
-          try {
-            const resJson = JSON.parse(resText);
-            if (!resJson.success) {
-              throw new Error(resJson.error || resJson.message || 'Gagal eksekusi Cloud.');
-            }
-            return resJson;
-          } catch (parseErr) {
-            if (resText.includes('<html') || resText.includes('<body') || resText.includes('google.com')) {
-              throw new Error('Akses diblokir! Pastikan Deployment GAS diset ke hak akses "Anyone" (Siapa saja).');
-            }
-            throw new Error('Respons server tidak valid atau terputus.');
-          }
-        } catch (err) {
-          retryCount++;
-          if (retryCount > maxRetries) throw err;
-          await new Promise(r => setTimeout(r, 1000));
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          setupRealtimeSubscription();
+        } catch (e) {
+          console.error("Gagal inisialisasi Supabase client", e);
         }
       }
     }
 
+    function setupRealtimeSubscription() {
+      if (!supabaseClient) return;
+      supabaseClient
+        .channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+          fetchCloudData(true);
+        })
+        .subscribe();
+    }
+
     async function fetchCloudData(silent = false) {
-      if (!GAS_ENDPOINT_URL) {
-        const warn = document.getElementById('urlWarningBanner');
-        if (warn) warn.classList.remove('hidden');
-        if (warn) warn.classList.add('flex');
-        if (!silent) hideLoading();
-        return;
-      }
-
-      const warn = document.getElementById('urlWarningBanner');
-      if (warn) { warn.classList.add('hidden'); warn.classList.remove('flex'); }
-
-      if (!silent) showLoading('Sinkronisasi Data Cloud...');
+      if (!supabaseClient) return;
+      if (!silent) showLoading('Sinkronisasi Database...');
 
       try {
-        const res = await callGasApi('getInitialData');
-        if (res.success) {
-          rooms = res.rooms || [];
-          schedules = res.schedules || [];
-          if (res.operatorPin) currentOperatorPin = String(res.operatorPin);
-          if (res.runningText) runningTextMsg = res.runningText;
-          if (res.logoImg) currentLogoUrl = res.logoImg;
-          if (res.tvBg) currentTvBgUrl = res.tvBg;
+        const { data: rData } = await supabaseClient.from('rooms').select('*').order('name');
+        if (rData) rooms = rData;
 
-          updateUiState();
-          updateSyncTimestamp();
+        const { data: sData } = await supabaseClient.from('schedules').select('*').order('date', { ascending: false });
+        if (sData) {
+          schedules = sData.map(s => ({
+            id: s.id,
+            roomId: s.room_id,
+            roomName: s.room_name,
+            roomFloor: s.room_floor,
+            title: s.title,
+            date: s.date,
+            startTime: s.start_time,
+            endTime: s.end_time
+          }));
         }
+
+        const { data: cData } = await supabaseClient.from('config').select('*');
+        if (cData) {
+          cData.forEach(c => {
+            if (c.key === 'runningText') runningTextMsg = c.value;
+            if (c.key === 'logoImg') currentLogoUrl = c.value;
+            if (c.key === 'tvBg') currentTvBgUrl = c.value;
+          });
+        }
+
+        const { data: oData } = await supabaseClient.from('operators').select('*').limit(1);
+        if (oData && oData.length > 0) currentOperatorPin = String(oData[0].pin);
+
+        updateUiState();
       } catch (err) {
         if (!silent) showToast(err.message, 'error');
       } finally {
         if (!silent) hideLoading();
       }
-    }
-
-    function updateSyncTimestamp() {
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
-      const tsEl = document.getElementById('syncTimestamp');
-      if (tsEl) tsEl.innerText = `Terakhir: ${timeStr} WIB`;
     }
 
     function updateUiState() {
@@ -1063,7 +1025,7 @@
 
     async function handleScheduleSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('schedId').value || 'SCH_' + Date.now();
+      const id = document.getElementById('schedId').value || '';
       const roomId = document.getElementById('schedRoomId').value;
       const room = rooms.find(r => r.id === roomId);
 
@@ -1073,7 +1035,7 @@
       const eM = document.getElementById('schedEndMinute').value;
 
       const newSched = {
-        id: id,
+        id: id || undefined,
         roomId: roomId,
         roomName: room ? room.name : '',
         roomFloor: room ? room.floor : '',
@@ -1083,112 +1045,129 @@
         endTime: `${eH}:${eM}`
       };
 
-      showLoading('Menyimpan Jadwal...');
-      try {
-        const res = await callGasApi('saveSchedule', { schedule: newSched });
-        if (res.success) {
-          const idx = schedules.findIndex(s => s.id === id);
-          if (idx > -1) schedules[idx] = newSched; else schedules.unshift(newSched);
-          updateUiState();
-          closeScheduleModal();
-          showToast('Jadwal berhasil disimpan!', 'success');
-        }
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        hideLoading();
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        return;
       }
+
+      showLoading('Menyimpan Jadwal...');
+      const payload = {
+        room_id: newSched.roomId,
+        room_name: newSched.roomName,
+        room_floor: newSched.roomFloor,
+        title: newSched.title,
+        date: newSched.date,
+        start_time: newSched.startTime,
+        end_time: newSched.endTime
+      };
+      if (id) payload.id = id;
+
+      const { error } = await supabaseClient.from('schedules').upsert(payload);
+      hideLoading();
+
+      if (error) {
+        showToast('Gagal menyimpan jadwal: ' + error.message, 'error');
+        return;
+      }
+
+      closeScheduleModal();
+      showToast('Jadwal berhasil disimpan ke Supabase!', 'success');
+      fetchCloudData(true);
     }
 
     function confirmDeleteSchedule(id) {
       showConfirmModal('Hapus Jadwal', 'Apakah Anda yakin ingin menghapus jadwal ini secara permanen?', async () => {
-        showLoading('Menghapus Jadwal...');
-        try {
-          const res = await callGasApi('deleteSchedule', { id: id });
-          if (res.success) {
-            schedules = schedules.filter(s => s.id !== id);
-            updateUiState();
-            showToast('Jadwal dihapus dari database.', 'success');
-          }
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally {
-          hideLoading();
+        if (!supabaseClient) {
+          showToast('Database Supabase belum terhubung.', 'error');
+          return;
         }
+        showLoading('Menghapus Jadwal...');
+        const { error } = await supabaseClient.from('schedules').delete().eq('id', id);
+        hideLoading();
+        if (error) {
+          showToast('Gagal menghapus: ' + error.message, 'error');
+          return;
+        }
+        showToast('Jadwal dihapus.', 'success');
+        fetchCloudData(true);
       });
     }
 
     async function handleRoomSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById('roomId').value || 'ROOM_' + Date.now();
+      const id = document.getElementById('roomId').value || '';
       const newRoom = {
-        id: id,
         name: document.getElementById('roomName').value.trim(),
         floor: document.getElementById('roomFloor').value.trim()
       };
 
-      showLoading('Menyimpan Ruangan ke Cloud...');
-      try {
-        const res = await callGasApi('saveRoom', { room: newRoom });
-        if (res.success) {
-          const idx = rooms.findIndex(r => r.id === id);
-          if (idx > -1) rooms[idx] = newRoom; else rooms.push(newRoom);
-          
-          updateUiState();
-          closeRoomModal();
-          showToast('Master Ruangan berhasil disimpan!', 'success');
-        }
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        hideLoading();
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung. Konfigurasi melalui menu Pengaturan.', 'error');
+        return;
       }
+
+      showLoading('Menyimpan Ruangan...');
+      const payload = { name: newRoom.name, floor: newRoom.floor };
+      if (id) payload.id = id;
+
+      const { error } = await supabaseClient.from('rooms').upsert(payload);
+      hideLoading();
+
+      if (error) {
+        showToast('Gagal menyimpan ruangan: ' + error.message, 'error');
+        return;
+      }
+
+      closeRoomModal();
+      showToast('Master Ruangan berhasil disimpan ke Supabase!', 'success');
+      fetchCloudData(true);
     }
 
     function confirmDeleteRoom(id) {
-      showConfirmModal('Hapus Ruangan', 'Menghapus master ruangan tidak akan menghapus data jadwal yang sudah dibuat di ruangan tersebut. Lanjutkan?', async () => {
-        showLoading('Menghapus Ruangan...');
-        try {
-          const res = await callGasApi('deleteRoom', { id: id });
-          if (res.success) {
-            rooms = rooms.filter(r => r.id !== id);
-            updateUiState();
-            showToast('Master ruangan dihapus.', 'success');
-          }
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally {
-          hideLoading();
+      showConfirmModal('Hapus Ruangan', 'Menghapus master ruangan ini akan menghapus jadwal terkait. Lanjutkan?', async () => {
+        if (!supabaseClient) {
+          showToast('Database Supabase belum terhubung.', 'error');
+          return;
         }
+        showLoading('Menghapus Ruangan...');
+        const { error } = await supabaseClient.from('rooms').delete().eq('id', id);
+        hideLoading();
+        if (error) {
+          showToast('Gagal menghapus ruangan: ' + error.message, 'error');
+          return;
+        }
+        showToast('Master ruangan dihapus.', 'success');
+        fetchCloudData(true);
       });
     }
 
     async function saveRunningText() {
       const val = document.getElementById('runningTextInput').value;
-      showLoading('Menyimpan Running Text...');
-      try {
-        const res = await callGasApi('saveConfig', { key: 'runningText', value: val });
-        if (res.success) {
-          runningTextMsg = val;
-          const el = document.getElementById('tvMarqueeText');
-          if (el) el.innerText = runningTextMsg;
-          showToast('Teks berjalan diperbarui!', 'success');
-        }
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        hideLoading();
+      if (!supabaseClient) {
+        showToast('Database Supabase belum terhubung.', 'error');
+        return;
       }
+      showLoading('Menyimpan Running Text...');
+      const { error } = await supabaseClient.from('config').upsert({ key: 'runningText', value: val });
+      hideLoading();
+      if (error) {
+        showToast('Gagal menyimpan running text: ' + error.message, 'error');
+        return;
+      }
+      runningTextMsg = val;
+      const el = document.getElementById('tvMarqueeText');
+      if (el) el.innerText = runningTextMsg;
+      showToast('Teks berjalan berhasil diperbarui!', 'success');
     }
 
     // =========================================================================
-    // 7. KOMPRESI KANVAS GAMBAR LOGO & BACKGROUND TV (ANTI-TIMEOUT)
+    // 7. KOMPRESI KANVAS GAMBAR LOGO & BACKGROUND TV
     // =========================================================================
     function triggerLogoUpload() { document.getElementById('logoFileInput')?.click(); }
     function handleLogoUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-      showLoading('Mengompresi & Menyimpan Logo...');
+      showLoading('Mengompresi Logo...');
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
@@ -1202,18 +1181,15 @@
           ctx.drawImage(img, 0, 0, w, h);
           const base64 = canvas.toDataURL('image/png');
 
-          try {
-            const res = await callGasApi('saveConfig', { key: 'logoImg', value: base64 });
-            if (res.success) {
-              currentLogoUrl = base64;
-              applyVisualAssets();
-              showToast('Logo instansi berhasil diperbarui!', 'success');
-            }
-          } catch (err) {
-            showToast(err.message, 'error');
-          } finally {
-            hideLoading();
+          if (supabaseClient) {
+            showLoading('Menyimpan ke Database...');
+            const { error } = await supabaseClient.from('config').upsert({ key: 'logoImg', value: base64 });
+            if (error) showToast(error.message, 'error');
           }
+          currentLogoUrl = base64;
+          applyVisualAssets();
+          hideLoading();
+          showToast('Logo instansi berhasil diperbarui!', 'success');
         };
         img.src = evt.target.result;
       };
@@ -1224,7 +1200,7 @@
     function handleBackgroundUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
-      showLoading('Mengompresi & Menyimpan Foto Latar...');
+      showLoading('Mengompresi Foto Latar...');
       const reader = new FileReader();
       reader.onload = function(evt) {
         const img = new Image();
@@ -1238,18 +1214,15 @@
           ctx.drawImage(img, 0, 0, w, h);
           const base64 = canvas.toDataURL('image/jpeg', 0.7);
 
-          try {
-            const res = await callGasApi('saveConfig', { key: 'tvBg', value: base64 });
-            if (res.success) {
-              currentTvBgUrl = base64;
-              applyVisualAssets();
-              showToast('Foto latar TV berhasil diperbarui!', 'success');
-            }
-          } catch (err) {
-            showToast(err.message, 'error');
-          } finally {
-            hideLoading();
+          if (supabaseClient) {
+            showLoading('Menyimpan ke Database...');
+            const { error } = await supabaseClient.from('config').upsert({ key: 'tvBg', value: base64 });
+            if (error) showToast(error.message, 'error');
           }
+          currentTvBgUrl = base64;
+          applyVisualAssets();
+          hideLoading();
+          showToast('Foto latar TV berhasil diperbarui!', 'success');
         };
         img.src = evt.target.result;
       };
@@ -1264,19 +1237,15 @@
         showToast('PIN Saat Ini Tidak Cocok!', 'error');
         return;
       }
-      showLoading('Mengubah PIN Operator...');
-      try {
-        const res = await callGasApi('saveOperatorPin', { pin: nw });
-        if (res.success) {
-          currentOperatorPin = nw;
-          closeChangePinModal();
-          showToast('PIN Operator Berhasil Diperbarui!', 'success');
-        }
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
+      if (supabaseClient) {
+        showLoading('Mengubah PIN...');
+        const { error } = await supabaseClient.from('operators').update({ pin: nw }).neq('id', '00000000-0000-0000-0000-000000000000');
         hideLoading();
+        if (error) { showToast(error.message, 'error'); return; }
       }
+      currentOperatorPin = nw;
+      closeChangePinModal();
+      showToast('PIN Operator Berhasil Diperbarui!', 'success');
     }
 
     // =========================================================================
@@ -1402,18 +1371,23 @@
     }
     function closeChangePinModal() { document.getElementById('changePinModal').style.display = 'none'; }
 
-    function openGasConfigModal() {
-      document.getElementById('inputGasUrl').value = GAS_ENDPOINT_URL;
-      document.getElementById('gasConfigModal').style.display = 'flex';
+    function openSupabaseConfigModal() {
+      document.getElementById('inputSbUrl').value = SUPABASE_URL;
+      document.getElementById('inputSbKey').value = SUPABASE_ANON_KEY;
+      document.getElementById('supabaseConfigModal').style.display = 'flex';
     }
-    function closeGasConfigModal() { document.getElementById('gasConfigModal').style.display = 'none'; }
-    function saveGasConfigUrl() {
-      const url = document.getElementById('inputGasUrl').value.trim();
-      GAS_ENDPOINT_URL = url;
-      localStorage.setItem('GAS_ENDPOINT_URL', url);
-      closeGasConfigModal();
-      showToast('Koneksi Diperbarui, Menyinkronkan...', 'success');
+    function closeSupabaseConfigModal() { document.getElementById('supabaseConfigModal').style.display = 'none'; }
+    function saveSupabaseConfig() {
+      const url = document.getElementById('inputSbUrl').value.trim();
+      const key = document.getElementById('inputSbKey').value.trim();
+      SUPABASE_URL = url;
+      SUPABASE_ANON_KEY = key;
+      localStorage.setItem('SB_URL', url);
+      localStorage.setItem('SB_KEY', key);
+      closeSupabaseConfigModal();
+      initSupabase();
       fetchCloudData();
+      showToast('Koneksi Supabase Disimpan!', 'success');
     }
 
     function showConfirmModal(title, msg, onConfirm) {
@@ -1454,7 +1428,7 @@
     }
 
     // =========================================================================
-    // 9. INITIALIZER & AUTO POLLING 3 DETIK (REALTIME MULTI-DEVICE SYNC)
+    // 9. INITIALIZER
     // =========================================================================
     setInterval(() => {
       const now = new Date();
@@ -1465,19 +1439,14 @@
       renderTvSignage();
     }, 1000);
 
-    setInterval(() => {
-      if (GAS_ENDPOINT_URL) fetchCloudData(true);
-    }, 3000);
-
     window.onload = () => {
       initTimeSelects();
-      if (GAS_ENDPOINT_URL) {
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+        initSupabase();
         fetchCloudData();
       } else {
         updateUiState();
         hideLoading();
-        const warn = document.getElementById('urlWarningBanner');
-        if (warn) { warn.classList.remove('hidden'); warn.classList.add('flex'); }
       }
     };
   </script>
