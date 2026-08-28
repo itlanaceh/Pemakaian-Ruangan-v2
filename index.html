@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Jadwal Pemakaian Ruangan</title>
+  <title>Sistem Jadwal Pemakaian Ruangan & TV Signage</title>
+  <!-- Favicon Inline SVG Data URI -->
   <link rel="icon" id="dynamicFavicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300a3ff'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/></svg>">
+  
+  <!-- CDNs: Tailwind CSS, Chart.js, Poppins Font -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
   <script>
     tailwind.config = {
       theme: {
@@ -54,10 +58,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased font-sans">
 
-  <!-- OVERLAY LOADING (z-[9999]) -->
+  <!-- ========================================================================= -->
+  <!-- 1. Z-INDEX OVERLAYS & NOTIFICATIONS (Strict Hierarchy)                    -->
+  <!-- ========================================================================= -->
+  
+  <!-- LOADING OVERLAY (z-[9999]) -->
   <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300">
     <div class="w-14 h-14 border-4 border-white/20 border-t-[#00a3ff] rounded-full animate-spin"></div>
-    <p id="loadingText" class="mt-4 font-bold text-sm tracking-wide">Memuat Sistem...</p>
+    <p id="loadingText" class="mt-4 font-bold text-sm tracking-wide">Sinkronisasi Cloud...</p>
   </div>
 
   <!-- TOAST CONTAINER (z-[2000]) -->
@@ -66,8 +74,8 @@
   <!-- SMART UI WARNING: URL BACKEND BELUM TERHUBUNG (z-[2000]) -->
   <div id="urlWarningBanner" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[2000] hidden bg-amber-500 text-white px-6 py-3 rounded-2xl shadow-xl border border-amber-400 font-bold text-xs items-center gap-3">
     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-    <span>URL Backend Google Apps Script belum dikonfigurasi. Hubungkan endpoint untuk sinkronisasi cloud.</span>
-    <button onclick="openGasConfigModal()" class="px-3 py-1 bg-white text-amber-700 rounded-lg text-xs font-black shadow-sm">Hubungkan</button>
+    <span>URL Backend Google Apps Script belum terhubung. Silakan konfigurasi endpoint cloud.</span>
+    <button onclick="openGasConfigModal()" class="px-3 py-1 bg-white text-amber-700 rounded-lg text-xs font-black shadow-sm hover:bg-amber-50 transition">Hubungkan</button>
   </div>
 
   <!-- MODAL KONFIRMASI (z-[1000]) -->
@@ -108,14 +116,16 @@
     </div>
   </div>
 
-  <!-- AUTH VIEW (LOGIN) -->
+  <!-- ========================================================================= -->
+  <!-- 2. AUTH VIEW (LOGIN SCREEN)                                              -->
+  <!-- ========================================================================= -->
   <div id="loginView" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
     <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center">
       <div id="loginModalLogo" class="w-16 h-16 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center mx-auto mb-4 border border-sky-100 overflow-hidden">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
       </div>
       <h1 class="font-extrabold text-xl text-slate-800">Portal Operator Ruangan</h1>
-      <p class="text-xs text-slate-400 font-medium mb-6">Masukkan PIN Operator untuk mengelola jadwal dan tampilan TV</p>
+      <p class="text-xs text-slate-400 font-medium mb-6">Masukkan PIN Operator untuk mengelola jadwal dan display TV</p>
 
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4 text-left">
         <div>
@@ -138,7 +148,9 @@
     </div>
   </div>
 
-  <!-- MAIN OPERATOR DASHBOARD (AUTH GUARD: DISPLAY NONE DEFAULT) -->
+  <!-- ========================================================================= -->
+  <!-- 3. MAIN OPERATOR DASHBOARD (AUTH GUARD: DISPLAY NONE DEFAULT)             -->
+  <!-- ========================================================================= -->
   <div id="mainApp" style="display: none;" class="min-h-screen flex bg-slate-50">
     <!-- SIDEBAR -->
     <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 shrink-0">
@@ -218,10 +230,10 @@
         </div>
       </header>
 
-      <!-- BODY CONTENT -->
+      <!-- BODY CONTENT (Bento Grid Architecture) -->
       <div class="p-8 space-y-6">
 
-        <!-- TAB DASHBOARD STATISTIK -->
+        <!-- TAB 1: DASHBOARD STATISTIK -->
         <section id="tab-dashboard" class="space-y-6">
           <!-- TOP STAT CARDS -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -278,7 +290,7 @@
           </div>
         </section>
 
-        <!-- TAB JADWAL RUANGAN (TABEL & PENCARIAN) -->
+        <!-- TAB 2: JADWAL RUANGAN (TABEL & SEARCH DEBOUNCE) -->
         <section id="tab-jadwal" class="space-y-6 hidden">
           <!-- FILTER & SEARCH ROW -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
@@ -316,7 +328,7 @@
           </div>
         </section>
 
-        <!-- TAB MASTER RUANGAN -->
+        <!-- TAB 3: MASTER RUANGAN -->
         <section id="tab-ruangan" class="space-y-6 hidden">
           <div class="flex items-center justify-between">
             <div>
@@ -344,7 +356,7 @@
           </div>
         </section>
 
-        <!-- TAB RUNNING TEXT & ASET VISUAL -->
+        <!-- TAB 4: RUNNING TEXT & ASET VISUAL -->
         <section id="tab-runningText" class="space-y-6 hidden">
           <div>
             <h2 class="text-base font-extrabold text-slate-800">Pengaturan Display & Aset Visual TV</h2>
@@ -399,7 +411,9 @@
     </main>
   </div>
 
-  <!-- TV SIGNAGE FULLSCREEN DISPLAY -->
+  <!-- ========================================================================= -->
+  <!-- 4. TV SIGNAGE FULLSCREEN DISPLAY (White Glass Cards, 06:30 & H-5 Engine)  -->
+  <!-- ========================================================================= -->
   <div id="tvSignageView" style="display: none;" class="fixed inset-0 z-[1000] bg-slate-900 bg-cover bg-center flex flex-col justify-between select-none">
     <!-- TV HEADER -->
     <header class="bg-slate-900/60 backdrop-blur-md px-10 py-5 border-b border-white/10 flex items-center justify-between text-white">
@@ -454,7 +468,11 @@
     </footer>
   </div>
 
-  <!-- MODAL FORM JADWAL (24-JAM MURNI) -->
+  <!-- ========================================================================= -->
+  <!-- 5. MODAL FORMS (Pure 24-Hour Select, Room, Change PIN)                    -->
+  <!-- ========================================================================= -->
+
+  <!-- MODAL FORM JADWAL -->
   <div id="scheduleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100">
       <h3 id="scheduleModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Jadwal Ruangan</h3>
@@ -546,7 +564,9 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT APPLICATION CORE (PRODUCTION MODE - 100% CLEAN INITIAL STATE) -->
+  <!-- ========================================================================= -->
+  <!-- 6. JAVASCRIPT APPLICATION CORE (PRODUCTION COMPLETE)                      -->
+  <!-- ========================================================================= -->
   <script>
     // =========================================================================
     // 1. STATE & KONFIGURASI DATABASE
@@ -1434,7 +1454,7 @@
     }
 
     // =========================================================================
-    // 9. INITIALIZER & AUTO POLLING 3 DETIK (REALTIME SYNC)
+    // 9. INITIALIZER & AUTO POLLING 3 DETIK (REALTIME MULTI-DEVICE SYNC)
     // =========================================================================
     setInterval(() => {
       const now = new Date();
