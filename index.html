@@ -55,9 +55,12 @@
   <!-- TOAST CONTAINER (z-[2000]) -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[2000] flex flex-col gap-3 pointer-events-none"></div>
 
+  <!-- BACKDROP MOBILE SIDEBAR (z-[900]) -->
+  <div id="sidebarBackdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[900] hidden lg:hidden transition-opacity"></div>
+
   <!-- MODAL KONFIRMASI (z-[1000]) -->
   <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center max-h-[90vh] overflow-y-auto">
       <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-4 border border-rose-100">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
       </div>
@@ -72,7 +75,7 @@
 
   <!-- MODAL KONFIGURASI SUPABASE (z-[1000]) -->
   <div id="supabaseConfigModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 transform transition-all">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 transform transition-all max-h-[90vh] overflow-y-auto">
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm0 5h16"/></svg>
@@ -100,8 +103,8 @@
   </div>
 
   <!-- AUTH VIEW (LOGIN) -->
-  <div id="loginView" class="min-h-screen flex items-center justify-center p-6 bg-slate-100">
-    <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl border border-slate-100 text-center">
+  <div id="loginView" class="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-slate-100">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-100 text-center">
       <div id="loginModalLogo" class="w-16 h-16 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center mx-auto mb-4 border border-sky-100 overflow-hidden">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
       </div>
@@ -126,19 +129,24 @@
   </div>
 
   <!-- MAIN OPERATOR DASHBOARD -->
-  <div id="mainApp" style="display: none;" class="min-h-screen flex bg-slate-50">
-    <!-- SIDEBAR -->
-    <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 shrink-0">
+  <div id="mainApp" style="display: none;" class="min-h-screen flex bg-slate-50 relative">
+    <!-- SIDEBAR (RESPONSIVE DRAWER FOR MOBILE) -->
+    <aside id="mainSidebar" class="fixed inset-y-0 left-0 z-[950] w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between p-5 shrink-0 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out">
       <div class="space-y-6">
-        <!-- BRAND -->
-        <div class="flex items-center gap-3">
-          <div id="sidebarLogoWrapper" class="w-11 h-11 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center overflow-hidden shrink-0 border border-sky-100">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        <!-- BRAND & CLOSE BUTTON FOR MOBILE -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div id="sidebarLogoWrapper" class="w-11 h-11 rounded-2xl bg-sky-50 text-[#00a3ff] flex items-center justify-center overflow-hidden shrink-0 border border-sky-100">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-sm text-slate-800 leading-tight">ADMIN</h2>
+              <span class="inline-block mt-0.5 px-2 py-0.5 bg-sky-50 text-[#00a3ff] font-bold text-[10px] rounded-full">Operator System</span>
+            </div>
           </div>
-          <div>
-            <h2 class="font-extrabold text-sm text-slate-800 leading-tight">ADMIN</h2>
-            <span class="inline-block mt-0.5 px-2 py-0.5 bg-sky-50 text-[#00a3ff] font-bold text-[10px] rounded-full">Operator System</span>
-          </div>
+          <button onclick="toggleMobileSidebar(false)" class="lg:hidden p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
 
         <!-- NAVIGATION -->
@@ -188,17 +196,23 @@
     <!-- CONTENT AREA -->
     <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <!-- HEADER -->
-      <header class="bg-white border-b border-slate-200/80 px-8 py-5 flex items-center justify-between">
-        <div>
-          <h1 id="pageTitle" class="text-xl font-black text-slate-800 tracking-tight">DASHBOARD & STATISTIK</h1>
-          <p id="pageSubtitle" class="text-xs text-slate-400 font-medium">Analitik pemanfaatan ruangan secara komprehensif</p>
-        </div>
+      <header class="bg-white border-b border-slate-200/80 px-4 sm:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-xs font-bold text-slate-600">
+          <!-- MOBILE HAMBURGER BUTTON -->
+          <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h1 id="pageTitle" class="text-base sm:text-xl font-black text-slate-800 tracking-tight">DASHBOARD & STATISTIK</h1>
+            <p id="pageSubtitle" class="text-[11px] sm:text-xs text-slate-400 font-medium">Analitik pemanfaatan ruangan secara komprehensif</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full text-[11px] sm:text-xs font-bold text-slate-600">
             <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span id="syncTimestamp">Realtime Sync</span>
           </div>
-          <button onclick="openScheduleModal()" class="px-5 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
+          <button onclick="openScheduleModal()" class="px-4 sm:px-5 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Tambah Jadwal
           </button>
@@ -206,33 +220,36 @@
       </header>
 
       <!-- BODY CONTENT -->
-      <div class="p-8 space-y-6">
+      <div class="p-4 sm:p-8 space-y-6">
 
         <!-- TAB DASHBOARD STATISTIK -->
         <section id="tab-dashboard" class="space-y-6">
           <!-- TOP STAT CARDS -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-slate-400 uppercase">Total Agenda</span>
-              <p id="dashTotalAgenda" class="text-3xl font-black text-slate-800 mt-2">0</p>
-              <span class="text-xs font-medium text-slate-400 mt-1 block">Tercatat di sistem</span>
+              <p id="dashTotalAgenda" class="text-2xl sm:text-3xl font-black text-slate-800 mt-2">0</p>
+              <span id="dashPeriodLabel" class="text-xs font-medium text-slate-400 mt-1 block">Tercatat di sistem (Bulan Ini)</span>
             </div>
-            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-[#00a3ff] uppercase">Sedang Berlangsung</span>
-              <p id="dashActiveAgenda" class="text-3xl font-black text-[#00a3ff] mt-2">0</p>
+              <p id="dashActiveAgenda" class="text-2xl sm:text-3xl font-black text-[#00a3ff] mt-2">0</p>
               <span class="text-xs font-medium text-slate-400 mt-1 block">Saat ini di ruangan</span>
             </div>
-            <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm sm:col-span-2 md:col-span-1">
               <span class="text-[10px] font-black tracking-wider text-emerald-500 uppercase">Ruangan Teraktif</span>
-              <p id="dashTopRoom" class="text-xl font-black text-slate-800 mt-2 truncate">-</p>
-              <span class="text-xs font-medium text-slate-400 mt-1 block">Frekuensi pemakaian terbanyak</span>
+              <p id="dashTopRoom" class="text-lg sm:text-xl font-black text-slate-800 mt-2 truncate">-</p>
+              <span id="dashTopRoomLabel" class="text-xs font-medium text-slate-400 mt-1 block">Frekuensi terbanyak periode ini</span>
             </div>
           </div>
 
           <!-- TIME FILTER BUTTONS -->
-          <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-            <span class="text-xs font-bold text-slate-700">Filter Periode Analitik:</span>
-            <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-500">
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700">Filter Periode Analitik:</span>
+              <span id="activeFilterBadge" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-sky-50 text-[#00a3ff]">Bulanan</span>
+            </div>
+            <div class="flex flex-wrap bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-500">
               <button onclick="setAnalyticsFilter('daily')" id="btnFilterDaily" class="px-3 py-1.5 rounded-lg transition">Harian</button>
               <button onclick="setAnalyticsFilter('weekly')" id="btnFilterWeekly" class="px-3 py-1.5 rounded-lg transition">Mingguan</button>
               <button onclick="setAnalyticsFilter('monthly')" id="btnFilterMonthly" class="px-3 py-1.5 rounded-lg bg-white text-[#00a3ff] shadow-sm transition">Bulanan</button>
@@ -240,27 +257,36 @@
             </div>
           </div>
 
-          <!-- 3 CHARTS IN BENTO GRID -->
+          <!-- 3 CHARTS IN BENTO GRID (MULTI-COLOR PALETTE) -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- 1. GRAFIK BATANG -->
-            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
-              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Batang: Pemakaian Per Ruangan</h3>
-              <p class="text-xs text-slate-400 mb-4">Volume kegiatan berdasarkan lokasi</p>
-              <div class="h-60 relative"><canvas id="barChart"></canvas></div>
+            <!-- 1. GRAFIK BATANG (MULTI-WARNA DINAMIS PER RUANGAN) -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="font-extrabold text-sm text-slate-800">Grafik Batang: Pemakaian Per Ruangan</h3>
+                <span id="badgeBarPeriod" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-50 text-[#00a3ff]">Bulan Ini</span>
+              </div>
+              <p id="subBarPeriod" class="text-xs text-slate-400 mb-4">Volume kegiatan per ruangan pada periode aktif</p>
+              <div class="h-64 relative"><canvas id="barChart"></canvas></div>
             </div>
 
-            <!-- 2. GRAFIK GARIS -->
-            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
-              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Garis: Tren Alokasi Jadwal</h3>
-              <p class="text-xs text-slate-400 mb-4">Pergerakan frekuensi waktu penggunaan</p>
-              <div class="h-60 relative"><canvas id="lineChart"></canvas></div>
+            <!-- 2. GRAFIK GARIS (GRADIENT GLOW & TITIK WARNA-WARNI) -->
+            <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="font-extrabold text-sm text-slate-800">Grafik Garis: Tren Alokasi Jadwal</h3>
+                <span id="badgeLinePeriod" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">Bulan Ini</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-4">Pergerakan frekuensi waktu penggunaan ruangan</p>
+              <div class="h-64 relative"><canvas id="lineChart"></canvas></div>
             </div>
 
-            <!-- 3. GRAFIK PIE -->
-            <div class="lg:col-span-12 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm">
-              <h3 class="font-extrabold text-sm text-slate-800 mb-1">Grafik Pie: Proporsi Utilisasi Ruangan</h3>
-              <p class="text-xs text-slate-400 mb-4">Distribusi persentase pembagian ruang</p>
-              <div class="h-64 relative flex items-center justify-center"><canvas id="pieChart"></canvas></div>
+            <!-- 3. GRAFIK PIE (PALET WARNA KONTRAS & DISTINCT) -->
+            <div class="lg:col-span-12 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+              <div class="flex items-center justify-between mb-1">
+                <h3 class="font-extrabold text-sm text-slate-800">Grafik Pie: Proporsi Utilisasi Ruangan</h3>
+                <span id="badgePiePeriod" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Bulan Ini</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-4">Distribusi persentase pembagian alokasi ruang</p>
+              <div class="h-72 relative flex items-center justify-center"><canvas id="pieChart"></canvas></div>
             </div>
           </div>
         </section>
@@ -269,11 +295,11 @@
         <section id="tab-jadwal" class="space-y-6 hidden">
           <!-- FILTER & SEARCH ROW -->
           <div class="bg-white rounded-2xl p-4 border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
-            <div class="relative flex-1 min-w-[260px]">
+            <div class="relative flex-1 min-w-[240px]">
               <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               <input type="text" id="searchInput" oninput="handleSearchDebounced()" placeholder="Cari kegiatan atau nama ruangan..." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
             </div>
-            <div class="w-56">
+            <div class="w-full sm:w-56">
               <select id="filterRoomSelect" onchange="renderSchedules()" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff] text-slate-700">
                 <option value="">Semua Ruangan</option>
               </select>
@@ -282,8 +308,8 @@
 
           <!-- SCHEDULE DATA TABLE -->
           <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left text-xs min-w-[600px]">
                 <thead class="bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   <tr>
                     <th class="py-4 px-6">Status</th>
@@ -305,7 +331,7 @@
 
         <!-- TAB MASTER RUANGAN -->
         <section id="tab-ruangan" class="space-y-6 hidden">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 class="text-base font-extrabold text-slate-800">Daftar Master Ruangan</h2>
               <p class="text-xs text-slate-400">Kelola daftar ruangan dan lantai lokasi</p>
@@ -316,8 +342,8 @@
             </button>
           </div>
           <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left text-xs min-w-[400px]">
                 <thead class="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   <tr>
                     <th class="py-4 px-6">Nama Ruangan</th>
@@ -340,7 +366,7 @@
 
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- KARTU 1: TEKS BERJALAN (MARQUEE) -->
-            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
               <div>
                 <span class="block text-[11px] font-black tracking-wider text-slate-700 uppercase mb-3">Teks Berjalan (Marquee)</span>
                 <textarea id="runningTextInput" rows="5" placeholder="Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]"></textarea>
@@ -351,7 +377,7 @@
             </div>
 
             <!-- KARTU 2: ASET VISUAL TV SIGNAGE -->
-            <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+            <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm space-y-6">
               <span class="block text-[11px] font-black tracking-wider text-slate-700 uppercase">Aset Visual TV Signage</span>
 
               <!-- LOGO INSTANSI -->
@@ -389,38 +415,38 @@
   <!-- TV SIGNAGE FULLSCREEN DISPLAY -->
   <div id="tvSignageView" style="display: none;" class="fixed inset-0 z-[1000] bg-slate-900 bg-cover bg-center flex flex-col justify-between select-none">
     <!-- TV HEADER -->
-    <header class="bg-slate-900/60 backdrop-blur-md px-10 py-5 border-b border-white/10 flex items-center justify-between text-white">
-      <div class="flex items-center gap-4">
-        <div id="tvLogoWrapper" class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur p-2 flex items-center justify-center border border-white/20 overflow-hidden">
-          <svg class="w-7 h-7 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+    <header class="bg-slate-900/60 backdrop-blur-md px-4 sm:px-10 py-4 sm:py-5 border-b border-white/10 flex items-center justify-between text-white gap-3">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <div id="tvLogoWrapper" class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 backdrop-blur p-2 flex items-center justify-center border border-white/20 overflow-hidden shrink-0">
+          <svg class="w-6 h-6 sm:w-7 sm:h-7 text-[#00a3ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         </div>
         <div>
-          <h1 class="font-black text-xl tracking-wide uppercase">JADWAL PEMAKAIAN RUANGAN</h1>
-          <p id="tvDateDisplay" class="text-xs text-sky-200 font-semibold"></p>
+          <h1 class="font-black text-sm sm:text-xl tracking-wide uppercase">JADWAL PEMAKAIAN RUANGAN</h1>
+          <p id="tvDateDisplay" class="text-[10px] sm:text-xs text-sky-200 font-semibold"></p>
         </div>
       </div>
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-3 sm:gap-6">
         <div class="text-right">
-          <span id="tvClock" class="font-black text-3xl tracking-widest text-white">00:00:00</span>
-          <span class="block text-[10px] font-bold text-sky-300">WAKTU INDONESIA BARAT</span>
+          <span id="tvClock" class="font-black text-lg sm:text-3xl tracking-widest text-white">00:00:00</span>
+          <span class="hidden sm:block text-[10px] font-bold text-sky-300">WAKTU INDONESIA BARAT</span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2">
           <!-- TOMBOL FULLSCREEN TV -->
-          <button onclick="toggleTvFullscreen()" id="btnTvFullscreen" title="Layar Penuh" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
-            <svg id="iconFullscreenEnter" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-            <svg id="iconFullscreenExit" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7"/></svg>
+          <button onclick="toggleTvFullscreen()" id="btnTvFullscreen" title="Layar Penuh" class="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
+            <svg id="iconFullscreenEnter" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            <svg id="iconFullscreenExit" class="w-4 h-4 sm:w-5 sm:h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M4 10h6m0 0V4m0 6L3 3m17 7h-6m0 0V4m0 6l7-7"/></svg>
           </button>
           <!-- TOMBOL TUTUP DISPLAY TV -->
-          <button onclick="closeTvSignageModal()" title="Tutup Display" class="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          <button onclick="closeTvSignageModal()" title="Tutup Display" class="p-2 sm:p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition">
+            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
       </div>
     </header>
 
     <!-- TV SCHEDULE GRID CONTAINER -->
-    <div class="flex-1 p-10 overflow-y-auto">
-      <div id="tvScheduleCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+    <div class="flex-1 p-4 sm:p-10 overflow-y-auto custom-scrollbar">
+      <div id="tvScheduleCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"></div>
       <div id="emptyTvSignage" class="h-full flex flex-col items-center justify-center text-white/50 text-center py-20 hidden">
         <svg class="w-16 h-16 mb-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         <h3 class="text-xl font-bold text-white/70">Tidak Ada Agenda Aktif Saat Ini</h3>
@@ -443,7 +469,7 @@
 
   <!-- MODAL FORM JADWAL (24-JAM MURNI) -->
   <div id="scheduleModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
       <h3 id="scheduleModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Jadwal Ruangan</h3>
       <form onsubmit="handleScheduleSubmit(event)" class="space-y-3 text-xs">
         <input type="hidden" id="schedId">
@@ -451,7 +477,7 @@
           <label class="block font-bold text-slate-600 mb-1">Nama Kegiatan / Agenda</label>
           <input type="text" id="schedTitle" required placeholder="Contoh: Rapat Koordinasi Anggaran" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]">
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-slate-600 mb-1">Pilih Ruangan</label>
             <select id="schedRoomId" required class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-[#00a3ff]"></select>
@@ -463,7 +489,7 @@
         </div>
 
         <!-- 24-HOUR DUAL SELECT TIME PICKERS -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="block font-bold text-slate-600 mb-1">Jam Mulai (Format 24 Jam)</label>
             <div class="flex items-center gap-1.5">
@@ -492,7 +518,7 @@
 
   <!-- MODAL FORM RUANGAN -->
   <div id="roomModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
       <h3 id="roomModalTitle" class="font-extrabold text-base text-slate-800 mb-4">Tambah Master Ruangan</h3>
       <form onsubmit="handleRoomSubmit(event)" class="space-y-3 text-xs">
         <input type="hidden" id="roomId">
@@ -514,7 +540,7 @@
 
   <!-- MODAL GANTI PIN -->
   <div id="changePinModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1000] hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
       <h3 class="font-extrabold text-base text-slate-800 mb-4">Ganti PIN Operator</h3>
       <form onsubmit="handleChangePinSubmit(event)" class="space-y-3 text-xs">
         <div>
@@ -535,25 +561,22 @@
 
   <script>
     // =========================================================================
-    // 1. KONFIGURASI SUPABASE CLOUD OTOMATIS (ZERO-CONFIG MULTI-DEVICE)
+    // 1. STATE & KONFIGURASI SUPABASE CLOUD
     // =========================================================================
-    // Masukkan Project URL dan Anon Key Supabase Anda di bawah ini agar semua perangkat
-    // (Smart TV, HP, Laptop lain) otomatis langsung terhubung tanpa perlu input link lagi.
-    const EMBEDDED_SUPABASE_URL = "https://lffmweclasqqfjsirmwm.supabase.co"; // Ganti dengan URL Supabase Anda
-    const EMBEDDED_SUPABASE_KEY = "sb_publishable_nd0YjPZRowl74Fbz7BOIAQ_xZqKUNeV";              // Ganti dengan Anon Key Supabase Anda
+    const EMBEDDED_SUPABASE_URL = "https://lffmweclasqqfjsirmwm.supabase.co";
+    const EMBEDDED_SUPABASE_KEY = "sb_publishable_nd0YjPZRowl74Fbz7BOIAQ_xZqKUNeV";
 
-    // Prioritaskan localStorage jika pernah diedit via UI, atau gunakan embedded constant
-    let SUPABASE_URL = localStorage.getItem('SB_URL') || (EMBEDDED_SUPABASE_URL.includes('YOUR_PROJECT_ID') ? '' : EMBEDDED_SUPABASE_URL);
-    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || (EMBEDDED_SUPABASE_KEY.includes('YOUR_SUPABASE') ? '' : EMBEDDED_SUPABASE_KEY);
-    let supabaseClient = null;
+    var SUPABASE_URL = localStorage.getItem('SB_URL') || (EMBEDDED_SUPABASE_URL.includes('YOUR_PROJECT_ID') ? '' : EMBEDDED_SUPABASE_URL);
+    var SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || (EMBEDDED_SUPABASE_KEY.includes('YOUR_SUPABASE') ? '' : EMBEDDED_SUPABASE_KEY);
+    var supabaseClient = null;
 
     const todayIsoDate = new Date().toISOString().split('T')[0];
 
-    let rooms = [
+    var rooms = [
       { id: 'ROOM_103', name: 'Ruang 103', floor: 'Lantai 1' }
     ];
 
-    let schedules = [
+    var schedules = [
       {
         id: 'SCH_TEST_01',
         roomId: 'ROOM_103',
@@ -566,21 +589,32 @@
       }
     ];
 
-    let currentOperatorPin = '1234';
-    let runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
-    let currentLogoUrl = '';
-    let currentTvBgUrl = '';
-    let activeTab = 'dashboard';
-    let analyticsFilter = 'monthly';
-    let searchDebounceTimer = null;
-    let confirmCallback = null;
+    var currentOperatorPin = '1234';
+    var runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
+    var currentLogoUrl = '';
+    var currentTvBgUrl = '';
+    var activeTab = 'dashboard';
+    var analyticsFilter = 'monthly';
+    var searchDebounceTimer = null;
+    var confirmCallback = null;
 
-    let chartBarInstance = null;
-    let chartLineInstance = null;
-    let chartPieInstance = null;
+    var chartBarInstance = null;
+    var chartLineInstance = null;
+    var chartPieInstance = null;
+
+    // PALET WARNA DINAMIS & KONTRAS
+    const PALETTE_COLORS = [
+      '#00a3ff', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#6366f1',
+      '#14b8a6', '#f97316', '#a855f7', '#06b6d4', '#84cc16', '#ef4444'
+    ];
+
+    const PALETTE_BORDER_COLORS = [
+      '#0284c7', '#7c3aed', '#059669', '#d97706', '#db2777', '#4f46e5',
+      '#0d9488', '#ea580c', '#9333ea', '#0891b2', '#65a30d', '#dc2626'
+    ];
 
     // =========================================================================
-    // 2. SUPABASE CLIENT & REALTIME SUBSCRIPTION
+    // 2. SUPABASE CLIENT & REALTIME REST SYNC
     // =========================================================================
     function initSupabase() {
       if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
@@ -588,33 +622,9 @@
           supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: { persistSession: false }
           });
-          setupRealtimeSubscription();
         } catch (e) {
-          console.warn("Gagal inisialisasi Supabase client realtime, beralih ke REST polling:", e);
+          console.warn("Gagal inisialisasi Supabase client:", e);
         }
-      }
-    }
-
-    function setupRealtimeSubscription() {
-      if (!supabaseClient) return;
-      try {
-        // Cek ketersediaan WebSocket di window sebelum melakukan koneksi
-        if (typeof WebSocket === 'undefined') {
-          console.info("WebSocket tidak tersedia di container ini. Mode REST Polling otomatis aktif.");
-          return;
-        }
-        supabaseClient
-          .channel('public-db-changes')
-          .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-            fetchCloudData(true);
-          })
-          .subscribe((status) => {
-            if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-              console.info("Realtime WebSocket channel error/timeout, sistem menggunakan REST Polling.");
-            }
-          });
-      } catch (e) {
-        console.warn("WebSocket tidak diizinkan pada environment saat ini, menggunakan mode REST polling otomatis.", e);
       }
     }
 
@@ -653,10 +663,19 @@
         if (oData && oData.length > 0) currentOperatorPin = String(oData[0].pin);
 
         updateUiState();
+        updateSyncTimestamp();
       } catch (err) {
         if (!silent) showToast(err.message, 'error');
       } finally {
         if (!silent) hideLoading();
+      }
+    }
+
+    function updateSyncTimestamp() {
+      const ts = document.getElementById('syncTimestamp');
+      if (ts) {
+        const now = new Date();
+        ts.innerText = `Sinkron ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} WIB`;
       }
     }
 
@@ -695,8 +714,44 @@
     }
 
     // =========================================================================
-    // 3. STATISTIK & 3 GRAFIK (BATANG, GARIS, PIE)
+    // 3. STATISTIK & 3 GRAFIK (REALTIME FILTER: HARIAN, MINGGUAN, BULANAN, TAHUNAN)
     // =========================================================================
+    function isScheduleInFilterPeriod(schedDateStr, period, refDate = new Date()) {
+      if (!schedDateStr) return false;
+      const cleanDate = String(schedDateStr).split('T')[0];
+      const parts = cleanDate.split('-').map(Number);
+      if (parts.length < 3) return false;
+      
+      const sYear = parts[0];
+      const sMonth = parts[1] - 1;
+      const sDay = parts[2];
+      const schedDateObj = new Date(sYear, sMonth, sDay);
+
+      const refYear = refDate.getFullYear();
+      const refMonth = refDate.getMonth();
+      const refDay = refDate.getDate();
+
+      if (period === 'daily') {
+        return sYear === refYear && sMonth === refMonth && sDay === refDay;
+      } else if (period === 'weekly') {
+        const dayOfWeek = refDate.getDay();
+        const diffToMonday = (dayOfWeek + 6) % 7;
+        const monday = new Date(refYear, refMonth, refDay - diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return schedDateObj >= monday && schedDateObj <= sunday;
+      } else if (period === 'monthly') {
+        return sYear === refYear && sMonth === refMonth;
+      } else if (period === 'yearly') {
+        return sYear === refYear;
+      }
+      return true;
+    }
+
     function setAnalyticsFilter(period) {
       analyticsFilter = period;
       ['Daily', 'Weekly', 'Monthly', 'Yearly'].forEach(p => {
@@ -717,17 +772,42 @@
       const todayStr = now.toISOString().split('T')[0];
       const curTimeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-      let activeCount = 0;
+      const periodLabels = {
+        daily: 'Hari Ini',
+        weekly: 'Minggu Ini',
+        monthly: 'Bulan Ini',
+        yearly: 'Tahun Ini'
+      };
+      const activeLabel = periodLabels[analyticsFilter] || 'Bulan Ini';
+
+      const elFilterBadge = document.getElementById('activeFilterBadge');
+      const elPeriodLabel = document.getElementById('dashPeriodLabel');
+      const elBarBadge = document.getElementById('badgeBarPeriod');
+      const elLineBadge = document.getElementById('badgeLinePeriod');
+      const elPieBadge = document.getElementById('badgePiePeriod');
+
+      if (elFilterBadge) elFilterBadge.innerText = activeLabel;
+      if (elPeriodLabel) elPeriodLabel.innerText = `Tercatat di sistem (${activeLabel})`;
+      if (elBarBadge) elBarBadge.innerText = activeLabel;
+      if (elLineBadge) elLineBadge.innerText = activeLabel;
+      if (elPieBadge) elPieBadge.innerText = activeLabel;
+
+      let activeNowCount = 0;
+      let totalFilteredAgenda = 0;
       const roomCounts = {};
       rooms.forEach(r => { roomCounts[r.name] = 0; });
 
       schedules.forEach(s => {
         const sDate = String(s.date).split('T')[0];
         if (sDate === todayStr && curTimeStr >= s.startTime && curTimeStr <= s.endTime) {
-          activeCount++;
+          activeNowCount++;
         }
-        if (roomCounts[s.roomName] !== undefined) {
-          roomCounts[s.roomName]++;
+
+        if (isScheduleInFilterPeriod(s.date, analyticsFilter, now)) {
+          totalFilteredAgenda++;
+          if (roomCounts[s.roomName] !== undefined) {
+            roomCounts[s.roomName]++;
+          }
         }
       });
 
@@ -735,23 +815,26 @@
       const elActive = document.getElementById('dashActiveAgenda');
       const elTop = document.getElementById('dashTopRoom');
 
-      if (elTotal) elTotal.innerText = schedules.length;
-      if (elActive) elActive.innerText = activeCount;
+      if (elTotal) elTotal.innerText = totalFilteredAgenda;
+      if (elActive) elActive.innerText = activeNowCount;
 
       let topRoom = '-';
-      let maxCount = -1;
+      let maxCount = 0;
       for (const [rName, count] of Object.entries(roomCounts)) {
-        if (count > maxCount && count > 0) {
+        if (count > maxCount) {
           maxCount = count;
           topRoom = `${rName} (${count}x)`;
         }
       }
-      if (elTop) elTop.innerText = topRoom;
+      if (elTop) elTop.innerText = maxCount > 0 ? topRoom : 'Belum Ada';
 
       const labels = Object.keys(roomCounts);
       const dataCounts = Object.values(roomCounts);
       const safeLabels = labels.length ? labels : ['Belum Ada Ruangan'];
       const safeData = dataCounts.length ? dataCounts : [0];
+
+      const itemColors = safeLabels.map((_, i) => PALETTE_COLORS[i % PALETTE_COLORS.length]);
+      const itemBorderColors = safeLabels.map((_, i) => PALETTE_BORDER_COLORS[i % PALETTE_BORDER_COLORS.length]);
 
       // 1. CHART BATANG
       const ctxBar = document.getElementById('barChart')?.getContext('2d');
@@ -762,17 +845,44 @@
           data: {
             labels: safeLabels,
             datasets: [{
-              label: 'Frekuensi Kegiatan',
+              label: `Frekuensi Kegiatan (${activeLabel})`,
               data: safeData,
-              backgroundColor: '#00a3ff',
-              borderRadius: 8
+              backgroundColor: itemColors,
+              borderColor: itemBorderColors,
+              borderWidth: 1.5,
+              borderRadius: 10,
+              hoverBackgroundColor: itemBorderColors
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                titleFont: { family: 'Poppins', size: 12, weight: 'bold' },
+                bodyFont: { family: 'Poppins', size: 11 },
+                padding: 10,
+                cornerRadius: 12,
+                callbacks: {
+                  label: function(context) {
+                    return ` ${context.parsed.y} Kegiatan (${activeLabel})`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, font: { family: 'Poppins', size: 10 } },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: { font: { family: 'Poppins', size: 10, weight: '600' } },
+                grid: { display: false }
+              }
+            }
           }
         });
       }
@@ -781,25 +891,60 @@
       const ctxLine = document.getElementById('lineChart')?.getContext('2d');
       if (ctxLine) {
         if (chartLineInstance) chartLineInstance.destroy();
+
+        const gradientBg = ctxLine.createLinearGradient(0, 0, 0, 240);
+        gradientBg.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
+        gradientBg.addColorStop(0.5, 'rgba(0, 163, 255, 0.1)');
+        gradientBg.addColorStop(1, 'rgba(240, 249, 255, 0.01)');
+
         chartLineInstance = new Chart(ctxLine, {
           type: 'line',
           data: {
             labels: safeLabels,
             datasets: [{
-              label: 'Tren Pemakaian',
+              label: `Tren Pemakaian (${activeLabel})`,
               data: safeData,
-              borderColor: '#0284c7',
-              backgroundColor: 'rgba(2, 132, 199, 0.1)',
+              borderColor: '#8b5cf6',
+              borderWidth: 3,
+              backgroundColor: gradientBg,
               fill: true,
-              tension: 0.35,
-              pointRadius: 4
+              tension: 0.4,
+              pointBackgroundColor: itemColors,
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2.5,
+              pointRadius: 6,
+              pointHoverRadius: 8
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                titleFont: { family: 'Poppins', size: 12, weight: 'bold' },
+                bodyFont: { family: 'Poppins', size: 11 },
+                padding: 10,
+                cornerRadius: 12,
+                callbacks: {
+                  label: function(context) {
+                    return ` ${context.parsed.y} Pemakaian (${activeLabel})`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, font: { family: 'Poppins', size: 10 } },
+                grid: { color: '#f1f5f9' }
+              },
+              x: {
+                ticks: { font: { family: 'Poppins', size: 10, weight: '600' } },
+                grid: { display: false }
+              }
+            }
           }
         });
       }
@@ -814,13 +959,41 @@
             labels: safeLabels,
             datasets: [{
               data: safeData,
-              backgroundColor: ['#00a3ff', '#38bdf8', '#7dd3fc', '#bae6fd', '#0369a1', '#0284c7']
+              backgroundColor: itemColors,
+              borderColor: '#ffffff',
+              borderWidth: 2.5,
+              hoverOffset: 6
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  font: { family: 'Poppins', size: 11, weight: '600' },
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  padding: 16
+                }
+              },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                titleFont: { family: 'Poppins', size: 12, weight: 'bold' },
+                bodyFont: { family: 'Poppins', size: 11 },
+                padding: 10,
+                cornerRadius: 12,
+                callbacks: {
+                  label: function(context) {
+                    const val = context.raw || 0;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                    return ` ${context.label}: ${val} (${pct}%)`;
+                  }
+                }
+              }
+            }
           }
         });
       }
@@ -940,7 +1113,7 @@
         tvDateDisplay.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       }
 
-      const todayScheds = schedules.filter(s => String(s.date).split('T')[0] === todayStr);
+      const todayScheds = (schedules || []).filter(s => String(s.date).split('T')[0] === todayStr);
       const groupedByRoom = {};
       todayScheds.forEach(s => {
         if (!groupedByRoom[s.roomId]) groupedByRoom[s.roomId] = [];
@@ -949,11 +1122,11 @@
 
       const displayList = [];
       Object.keys(groupedByRoom).forEach(rId => {
-        const roomAgenda = groupedByRoom[rId].sort((a, b) => a.startTime.localeCompare(b.startTime));
+        const roomAgenda = groupedByRoom[rId].sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
 
         roomAgenda.forEach((agenda, idx) => {
-          const [sH, sM] = agenda.startTime.split(':').map(Number);
-          const [eH, eM] = agenda.endTime.split(':').map(Number);
+          const [sH, sM] = (agenda.startTime || '00:00').split(':').map(Number);
+          const [eH, eM] = (agenda.endTime || '23:59').split(':').map(Number);
           const startMin = sH * 60 + sM;
           const endMin = eH * 60 + eM;
 
@@ -1274,8 +1447,22 @@
     // =========================================================================
     // 8. MODAL & NAVIGATION HELPERS
     // =========================================================================
+    function toggleMobileSidebar(show) {
+      const sb = document.getElementById('mainSidebar');
+      const bd = document.getElementById('sidebarBackdrop');
+      if (!sb) return;
+      if (show) {
+        sb.classList.remove('-translate-x-full');
+        if (bd) bd.classList.remove('hidden');
+      } else {
+        sb.classList.add('-translate-x-full');
+        if (bd) bd.classList.add('hidden');
+      }
+    }
+
     function switchTab(tabId) {
       activeTab = tabId;
+      toggleMobileSidebar(false);
       ['dashboard', 'jadwal', 'ruangan', 'runningText'].forEach(t => {
         const sec = document.getElementById(`tab-${t}`);
         const btn = document.getElementById(`nav-${t}`);
@@ -1462,16 +1649,16 @@
       renderTvSignage();
     }, 1000);
 
-    // Auto REST Polling setiap 4 detik sebagai cadangan andal jika WebSocket diblokir sandbox/CSP
+    // REST Polling multi-device setiap 3 detik
     setInterval(() => {
-      if (supabaseClient) {
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         fetchCloudData(true);
       }
-    }, 4000);
+    }, 3000);
 
     window.onload = () => {
       initTimeSelects();
-      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_URL && SUPABASE_ANON_KEY) {
         initSupabase();
         fetchCloudData();
       } else {
