@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Jadwal Pemakaian Ruangan</title>
+  <title>Sistem Jadwal Pemakaian Ruangan & TV Signage</title>
   <link rel="icon" id="dynamicFavicon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300a3ff'><path d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -198,7 +198,6 @@
       <!-- HEADER -->
       <header class="bg-white border-b border-slate-200/80 px-4 sm:px-8 py-4 sm:py-5 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <!-- MOBILE HAMBURGER BUTTON -->
           <button onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
@@ -224,27 +223,27 @@
 
         <!-- TAB DASHBOARD STATISTIK -->
         <section id="tab-dashboard" class="space-y-6">
-          <!-- TOP STAT CARDS (4-CARD BALANCED BENTO GRID) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+          <!-- TOP STAT CARDS (4-CARD SYMMETRIC BENTO GRID - CLEANED) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-violet-600 uppercase">Total Ruangan</span>
-              <p id="dashTotalRooms" class="text-2xl sm:text-3xl font-black text-slate-800 mt-2">0</p>
-              <span class="text-xs font-medium text-slate-400 mt-1 block">Tersedia di master data</span>
+              <p id="dashTotalRooms" class="text-2xl font-black text-slate-800 mt-2">0</p>
+              <span class="text-[11px] font-medium text-slate-400 mt-1 block">Tersedia di master</span>
             </div>
-            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-slate-400 uppercase">Total Agenda</span>
-              <p id="dashTotalAgenda" class="text-2xl sm:text-3xl font-black text-slate-800 mt-2">0</p>
-              <span id="dashPeriodLabel" class="text-xs font-medium text-slate-400 mt-1 block">Tercatat di sistem (Bulan Ini)</span>
+              <p id="dashTotalAgenda" class="text-2xl font-black text-slate-800 mt-2">0</p>
+              <span id="dashPeriodLabel" class="text-[11px] font-medium text-slate-400 mt-1 block">Tercatat (Bulan Ini)</span>
             </div>
-            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-[#00a3ff] uppercase">Sedang Berlangsung</span>
-              <p id="dashActiveAgenda" class="text-2xl sm:text-3xl font-black text-[#00a3ff] mt-2">0</p>
-              <span class="text-xs font-medium text-slate-400 mt-1 block">Saat ini di ruangan</span>
+              <p id="dashActiveAgenda" class="text-2xl font-black text-[#00a3ff] mt-2">0</p>
+              <span class="text-[11px] font-medium text-slate-400 mt-1 block">Saat ini di ruangan</span>
             </div>
-            <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
+            <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm">
               <span class="text-[10px] font-black tracking-wider text-emerald-500 uppercase">Ruangan Teraktif</span>
-              <p id="dashTopRoom" class="text-lg sm:text-xl font-black text-slate-800 mt-2 truncate">-</p>
-              <span id="dashTopRoomLabel" class="text-xs font-medium text-slate-400 mt-1 block">Frekuensi terbanyak periode ini</span>
+              <p id="dashTopRoom" class="text-base font-black text-slate-800 mt-2 truncate">-</p>
+              <span class="text-[11px] font-medium text-slate-400 mt-1 block">Frekuensi terbanyak</span>
             </div>
           </div>
 
@@ -259,10 +258,11 @@
               <button onclick="setAnalyticsFilter('weekly')" id="btnFilterWeekly" class="px-3 py-1.5 rounded-lg transition">Mingguan</button>
               <button onclick="setAnalyticsFilter('monthly')" id="btnFilterMonthly" class="px-3 py-1.5 rounded-lg bg-white text-[#00a3ff] shadow-sm transition">Bulanan</button>
               <button onclick="setAnalyticsFilter('yearly')" id="btnFilterYearly" class="px-3 py-1.5 rounded-lg transition">Tahunan</button>
+              <button onclick="setAnalyticsFilter('all')" id="btnFilterAll" class="px-3 py-1.5 rounded-lg transition">Semua</button>
             </div>
           </div>
 
-          <!-- 3 CHARTS IN BENTO GRID (MULTI-COLOR PALETTE) -->
+          <!-- 3 CHARTS IN BENTO GRID -->
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- 1. GRAFIK BATANG -->
             <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
@@ -270,7 +270,7 @@
                 <h3 class="font-extrabold text-sm text-slate-800">Grafik Batang: Pemakaian Per Ruangan</h3>
                 <span id="badgeBarPeriod" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-50 text-[#00a3ff]">Bulan Ini</span>
               </div>
-              <p id="subBarPeriod" class="text-xs text-slate-400 mb-4">Volume kegiatan per ruangan pada periode aktif</p>
+              <p class="text-xs text-slate-400 mb-4">Volume kegiatan per ruangan pada periode aktif</p>
               <div class="h-64 relative"><canvas id="barChart"></canvas></div>
             </div>
 
@@ -284,14 +284,14 @@
               <div class="h-64 relative"><canvas id="lineChart"></canvas></div>
             </div>
 
-            <!-- 3. GRAFIK PIE -->
+            <!-- 3. GRAFIK PIE / DOUGHNUT -->
             <div class="lg:col-span-12 bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-sm">
               <div class="flex items-center justify-between mb-1">
                 <h3 class="font-extrabold text-sm text-slate-800">Grafik Pie: Proporsi Utilisasi Ruangan</h3>
                 <span id="badgePiePeriod" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">Bulan Ini</span>
               </div>
               <p class="text-xs text-slate-400 mb-4">Distribusi persentase pembagian alokasi ruang</p>
-              <div class="h-72 relative flex items-center justify-center"><canvas id="pieChart"></canvas></div>
+              <div class="h-80 relative flex items-center justify-center"><canvas id="pieChart"></canvas></div>
             </div>
           </div>
         </section>
@@ -454,7 +454,7 @@
     </main>
   </div>
 
-  <!-- TV SIGNAGE FULLSCREEN STANDALONE DISPLAY (ISOLATED FROM ADMIN DASHBOARD) -->
+  <!-- TV SIGNAGE FULLSCREEN STANDALONE DISPLAY -->
   <div id="tvSignageView" style="display: none;" class="fixed inset-0 z-[1000] w-full h-full min-h-screen bg-slate-950 flex flex-col justify-between select-none overflow-hidden">
     <!-- DEDICATED TV BACKGROUND LAYER WITH LIVE OPACITY & CONTRAST -->
     <div id="tvBgLayer" class="absolute inset-0 w-full h-full bg-cover bg-center transition-all duration-300 pointer-events-none z-0"></div>
@@ -489,7 +489,7 @@
       </div>
     </header>
 
-    <!-- TV SCHEDULE GRID CONTAINER (EXPANDS VERTICALLY TO FILL SCREEN) -->
+    <!-- TV SCHEDULE GRID CONTAINER -->
     <div class="relative z-10 flex-1 w-full p-3 sm:p-5 md:p-8 lg:p-10 overflow-y-auto custom-scrollbar flex flex-col justify-start">
       <div id="tvScheduleCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-5 md:gap-6"></div>
       <div id="emptyTvSignage" class="m-auto flex flex-col items-center justify-center text-white/50 text-center py-12 hidden">
@@ -499,7 +499,7 @@
       </div>
     </div>
 
-    <!-- TV RUNNING TEXT FOOTER (STRICTLY PINNED AT THE BOTTOM) -->
+    <!-- TV RUNNING TEXT FOOTER -->
     <footer class="relative z-10 shrink-0 mt-auto h-8 sm:h-10 md:h-11 bg-slate-950/85 backdrop-blur-md border-t border-white/10 flex items-center overflow-hidden">
       <div class="px-3 sm:px-4 md:px-5 bg-[#00a3ff] h-full flex items-center text-white font-black text-[10px] sm:text-xs tracking-wider uppercase shrink-0">
         Informasi
@@ -604,64 +604,53 @@
     </div>
   </div>
 
+  <!-- JAVASCRIPT APPLICATION CORE -->
   <script>
     // =========================================================================
-    // 1. STATE & KONFIGURASI SUPABASE CLOUD
+    // 1. STATE & DATABASE CREDENTIALS (ZERO-CONFIG EMBEDDED ENGINE)
     // =========================================================================
     const EMBEDDED_SUPABASE_URL = "https://lffmweclasqqfjsirmwm.supabase.co";
     const EMBEDDED_SUPABASE_KEY = "sb_publishable_nd0YjPZRowl74Fbz7BOIAQ_xZqKUNeV";
 
-    var SUPABASE_URL = localStorage.getItem('SB_URL') || (EMBEDDED_SUPABASE_URL.includes('YOUR_PROJECT_ID') ? '' : EMBEDDED_SUPABASE_URL);
-    var SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || (EMBEDDED_SUPABASE_KEY.includes('YOUR_SUPABASE') ? '' : EMBEDDED_SUPABASE_KEY);
-    var supabaseClient = null;
+    let SUPABASE_URL = localStorage.getItem('SB_URL') || (EMBEDDED_SUPABASE_URL.includes('YOUR_PROJECT_ID') ? '' : EMBEDDED_SUPABASE_URL);
+    let SUPABASE_ANON_KEY = localStorage.getItem('SB_KEY') || (EMBEDDED_SUPABASE_KEY.includes('YOUR_SUPABASE') ? '' : EMBEDDED_SUPABASE_KEY);
+    let supabaseClient = null;
 
-    const todayIsoDate = new Date().toISOString().split('T')[0];
+    // SAFE DEFAULT INITIAL ARRAYS TO PREVENT ANY REFERENCE ERRORS
+    let rooms = [];
+    let schedules = [];
 
-    var rooms = [
-      { id: 'ROOM_103', name: 'Ruang 103', floor: 'Lantai 1' }
-    ];
+    let currentOperatorPin = '1234';
+    let runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
+    let currentLogoUrl = '';
+    let currentTvBgUrl = '';
+    let tvBgOpacity = 100;
+    let tvBgContrast = 100;
 
-    var schedules = [
-      {
-        id: 'SCH_TEST_01',
-        roomId: 'ROOM_103',
-        roomName: 'Ruang 103',
-        roomFloor: 'Lantai 1',
-        title: 'Pengenalan materi',
-        date: todayIsoDate,
-        startTime: '10:00',
-        endTime: '11:30'
-      }
-    ];
+    let activeTab = 'dashboard';
+    let analyticsFilter = 'monthly';
+    let searchDebounceTimer = null;
+    let confirmCallback = null;
 
-    var currentOperatorPin = '1234';
-    var runningTextMsg = 'Selamat Datang di Portal Pemantauan Jadwal Ruangan & TV Signage.';
-    var currentLogoUrl = '';
-    var currentTvBgUrl = '';
-    var currentTvBgOpacity = '100';
-    var currentTvBgContrast = '100';
-    var activeTab = 'dashboard';
-    var analyticsFilter = 'monthly';
-    var searchDebounceTimer = null;
-    var confirmCallback = null;
-
-    var chartBarInstance = null;
-    var chartLineInstance = null;
-    var chartPieInstance = null;
+    let chartBarInstance = null;
+    let chartLineInstance = null;
+    let chartPieInstance = null;
 
     // PALET WARNA DINAMIS & KONTRAS
     const PALETTE_COLORS = [
-      '#00a3ff', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', '#6366f1',
-      '#14b8a6', '#f97316', '#a855f7', '#06b6d4', '#84cc16', '#ef4444'
+      '#00a3ff', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899', 
+      '#6366f1', '#14b8a6', '#f97316', '#a855f7', '#06b6d4', 
+      '#84cc16', '#ef4444'
     ];
 
     const PALETTE_BORDER_COLORS = [
-      '#0284c7', '#7c3aed', '#059669', '#d97706', '#db2777', '#4f46e5',
-      '#0d9488', '#ea580c', '#9333ea', '#0891b2', '#65a30d', '#dc2626'
+      '#0284c7', '#7c3aed', '#059669', '#d97706', '#db2777', 
+      '#4f46e5', '#0d9488', '#ea580c', '#9333ea', '#0891b2', 
+      '#65a30d', '#dc2626'
     ];
 
     // =========================================================================
-    // 2. SUPABASE CLIENT & REALTIME REST SYNC
+    // 2. SUPABASE INITIALIZER & CLOUD SYNC
     // =========================================================================
     function initSupabase() {
       if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
@@ -703,8 +692,8 @@
             if (c.key === 'runningText') runningTextMsg = c.value;
             if (c.key === 'logoImg') currentLogoUrl = c.value;
             if (c.key === 'tvBg') currentTvBgUrl = c.value;
-            if (c.key === 'tvBgOpacity') currentTvBgOpacity = c.value;
-            if (c.key === 'tvBgContrast') currentTvBgContrast = c.value;
+            if (c.key === 'tvBgOpacity') tvBgOpacity = parseInt(c.value, 10) || 100;
+            if (c.key === 'tvBgContrast') tvBgContrast = parseInt(c.value, 10) || 100;
           });
         }
 
@@ -760,68 +749,58 @@
       if (tvBgLayer) {
         if (currentTvBgUrl) {
           tvBgLayer.style.backgroundImage = `url(${currentTvBgUrl})`;
+          tvBgLayer.style.opacity = (tvBgOpacity / 100).toString();
+          tvBgLayer.style.filter = `contrast(${tvBgContrast}%)`;
         } else {
           tvBgLayer.style.backgroundImage = 'none';
         }
-        tvBgLayer.style.opacity = (Number(currentTvBgOpacity) / 100).toString();
-        tvBgLayer.style.filter = `contrast(${currentTvBgContrast}%)`;
       }
 
-      // Sinkronkan slider kontrol di menu pengaturan
       const opInput = document.getElementById('bgOpacityInput');
       const opVal = document.getElementById('bgOpacityVal');
       const ctInput = document.getElementById('bgContrastInput');
       const ctVal = document.getElementById('bgContrastVal');
-
-      if (opInput && opVal) {
-        opInput.value = currentTvBgOpacity || '100';
-        opVal.innerText = `${currentTvBgOpacity || '100'}%`;
-      }
-      if (ctInput && ctVal) {
-        ctInput.value = currentTvBgContrast || '100';
-        ctVal.innerText = `${currentTvBgContrast || '100'}%`;
-      }
+      if (opInput) opInput.value = tvBgOpacity;
+      if (opVal) opVal.innerText = `${tvBgOpacity}%`;
+      if (ctInput) ctInput.value = tvBgContrast;
+      if (ctVal) ctVal.innerText = `${tvBgContrast}%`;
     }
 
     function updateBgAdjustmentsLive() {
-      const op = document.getElementById('bgOpacityInput')?.value || '100';
-      const ct = document.getElementById('bgContrastInput')?.value || '100';
-
+      const op = document.getElementById('bgOpacityInput')?.value || 100;
+      const ct = document.getElementById('bgContrastInput')?.value || 100;
       const opVal = document.getElementById('bgOpacityVal');
       const ctVal = document.getElementById('bgContrastVal');
       if (opVal) opVal.innerText = `${op}%`;
       if (ctVal) ctVal.innerText = `${ct}%`;
 
-      currentTvBgOpacity = op;
-      currentTvBgContrast = ct;
-
       const tvBgLayer = document.getElementById('tvBgLayer');
       if (tvBgLayer) {
-        tvBgLayer.style.opacity = (Number(op) / 100).toString();
+        tvBgLayer.style.opacity = (op / 100).toString();
         tvBgLayer.style.filter = `contrast(${ct}%)`;
       }
     }
 
     async function saveBgAdjustments() {
-      const op = document.getElementById('bgOpacityInput')?.value || '100';
-      const ct = document.getElementById('bgContrastInput')?.value || '100';
-
-      currentTvBgOpacity = op;
-      currentTvBgContrast = ct;
+      const op = document.getElementById('bgOpacityInput')?.value || 100;
+      const ct = document.getElementById('bgContrastInput')?.value || 100;
+      tvBgOpacity = parseInt(op, 10);
+      tvBgContrast = parseInt(ct, 10);
 
       if (supabaseClient) {
-        await supabaseClient.from('config').upsert([
-          { key: 'tvBgOpacity', value: op },
-          { key: 'tvBgContrast', value: ct }
-        ]);
+        showLoading('Menyimpan Efek Visual...');
+        await supabaseClient.from('config').upsert({ key: 'tvBgOpacity', value: String(tvBgOpacity) });
+        await supabaseClient.from('config').upsert({ key: 'tvBgContrast', value: String(tvBgContrast) });
+        hideLoading();
       }
-      showToast('Pengaturan visibilitas & kontras latar disimpan!', 'success');
+      applyVisualAssets();
+      showToast('Efek visual berhasil disimpan!', 'success');
     }
 
-    function removeBackground() {
-      showConfirmModal('Hapus Foto Latar', 'Apakah Anda ingin menghapus foto latar belakang TV?', async () => {
+    async function removeBackground() {
+      showConfirmModal('Hapus Latar Belakang TV', 'Apakah Anda yakin ingin menghapus foto latar belakang TV?', async () => {
         if (supabaseClient) {
-          showLoading('Menghapus Foto Latar...');
+          showLoading('Menghapus Latar Belakang...');
           await supabaseClient.from('config').upsert({ key: 'tvBg', value: '' });
           hideLoading();
         }
@@ -832,18 +811,20 @@
     }
 
     // =========================================================================
-    // 3. STATISTIK & 3 GRAFIK (REALTIME FILTER: HARIAN, MINGGUAN, BULANAN, TAHUNAN)
+    // 3. STATISTIK & REKAPITULASI GRAFIK REAL-TIME
     // =========================================================================
     function isScheduleInFilterPeriod(schedDateStr, period, refDate = new Date()) {
       if (!schedDateStr) return false;
-      const cleanDate = String(schedDateStr).split('T')[0];
+      if (period === 'all') return true;
+
+      const cleanDate = String(schedDateStr).split('T')[0].trim();
       const parts = cleanDate.split('-').map(Number);
       if (parts.length < 3) return false;
       
       const sYear = parts[0];
       const sMonth = parts[1] - 1;
       const sDay = parts[2];
-      const schedDateObj = new Date(sYear, sMonth, sDay);
+      const schedDateObj = new Date(sYear, sMonth, sDay, 12, 0, 0);
 
       const refYear = refDate.getFullYear();
       const refMonth = refDate.getMonth();
@@ -854,8 +835,7 @@
       } else if (period === 'weekly') {
         const dayOfWeek = refDate.getDay();
         const diffToMonday = (dayOfWeek + 6) % 7;
-        const monday = new Date(refYear, refMonth, refDay - diffToMonday);
-        monday.setHours(0, 0, 0, 0);
+        const monday = new Date(refYear, refMonth, refDay - diffToMonday, 0, 0, 0, 0);
 
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
@@ -872,7 +852,7 @@
 
     function setAnalyticsFilter(period) {
       analyticsFilter = period;
-      ['Daily', 'Weekly', 'Monthly', 'Yearly'].forEach(p => {
+      ['Daily', 'Weekly', 'Monthly', 'Yearly', 'All'].forEach(p => {
         const btn = document.getElementById(`btnFilter${p}`);
         if (btn) {
           if (p.toLowerCase() === period) {
@@ -894,7 +874,8 @@
         daily: 'Hari Ini',
         weekly: 'Minggu Ini',
         monthly: 'Bulan Ini',
-        yearly: 'Tahun Ini'
+        yearly: 'Tahun Ini',
+        all: 'Semua Waktu'
       };
       const activeLabel = periodLabels[analyticsFilter] || 'Bulan Ini';
 
@@ -905,34 +886,53 @@
       const elPieBadge = document.getElementById('badgePiePeriod');
 
       if (elFilterBadge) elFilterBadge.innerText = activeLabel;
-      if (elPeriodLabel) elPeriodLabel.innerText = `Tercatat di sistem (${activeLabel})`;
+      if (elPeriodLabel) elPeriodLabel.innerText = `Tercatat (${activeLabel})`;
       if (elBarBadge) elBarBadge.innerText = activeLabel;
       if (elLineBadge) elLineBadge.innerText = activeLabel;
       if (elPieBadge) elPieBadge.innerText = activeLabel;
 
       let activeNowCount = 0;
       let totalFilteredAgenda = 0;
-      const roomCounts = {};
-      rooms.forEach(r => { roomCounts[r.name] = 0; });
 
-      schedules.forEach(s => {
-        const sDate = String(s.date).split('T')[0];
-        if (sDate === todayStr && curTimeStr >= s.startTime && curTimeStr <= s.endTime) {
+      const roomStats = {};
+      (rooms || []).forEach(r => {
+        roomStats[r.name] = {
+          id: r.id,
+          name: r.name,
+          floor: r.floor || '-',
+          count: 0
+        };
+      });
+
+      (schedules || []).forEach(s => {
+        const sDateStr = String(s.date || '').split('T')[0].trim();
+
+        if (sDateStr === todayStr && curTimeStr >= (s.startTime || '00:00') && curTimeStr <= (s.endTime || '23:59')) {
           activeNowCount++;
+        }
+
+        const matchedRoom = (rooms || []).find(r => r.id === s.roomId || r.name.toLowerCase() === (s.roomName || '').toLowerCase());
+        const targetRoomName = matchedRoom ? matchedRoom.name : (s.roomName || 'Ruangan Lain');
+
+        if (!roomStats[targetRoomName]) {
+          roomStats[targetRoomName] = {
+            id: s.roomId || 'OTHER',
+            name: targetRoomName,
+            floor: s.roomFloor || '-',
+            count: 0
+          };
         }
 
         if (isScheduleInFilterPeriod(s.date, analyticsFilter, now)) {
           totalFilteredAgenda++;
-          if (roomCounts[s.roomName] !== undefined) {
-            roomCounts[s.roomName]++;
-          }
+          roomStats[targetRoomName].count++;
         }
       });
 
+      const elRooms = document.getElementById('dashTotalRooms');
       const elTotal = document.getElementById('dashTotalAgenda');
       const elActive = document.getElementById('dashActiveAgenda');
       const elTop = document.getElementById('dashTopRoom');
-      const elRooms = document.getElementById('dashTotalRooms');
 
       if (elRooms) elRooms.innerText = (rooms || []).length;
       if (elTotal) elTotal.innerText = totalFilteredAgenda;
@@ -940,37 +940,43 @@
 
       let topRoom = '-';
       let maxCount = 0;
-      for (const [rName, count] of Object.entries(roomCounts)) {
-        if (count > maxCount) {
-          maxCount = count;
-          topRoom = `${rName} (${count}x)`;
+      for (const [rName, stat] of Object.entries(roomStats)) {
+        if (stat.count > maxCount) {
+          maxCount = stat.count;
+          topRoom = `${rName} (${stat.count}x)`;
         }
       }
       if (elTop) elTop.innerText = maxCount > 0 ? topRoom : 'Belum Ada';
 
-      const labels = Object.keys(roomCounts);
-      const dataCounts = Object.values(roomCounts);
-      const safeLabels = labels.length ? labels : ['Belum Ada Ruangan'];
-      const safeData = dataCounts.length ? dataCounts : [0];
+      // MENAMPILKAN SELURUH DATA KELAS / MASTER RUANGAN KE DALAM GRAFIK
+      const allRoomsList = Object.values(roomStats);
 
-      const itemColors = safeLabels.map((_, i) => PALETTE_COLORS[i % PALETTE_COLORS.length]);
-      const itemBorderColors = safeLabels.map((_, i) => PALETTE_BORDER_COLORS[i % PALETTE_BORDER_COLORS.length]);
+      const allRoomLabels = allRoomsList.length > 0 
+        ? allRoomsList.map(item => item.name) 
+        : ['Belum Ada Ruangan Terdaftar'];
+        
+      const allRoomCounts = allRoomsList.length > 0 
+        ? allRoomsList.map(item => item.count) 
+        : [0];
 
-      // 1. CHART BATANG
+      const itemColors = allRoomLabels.map((_, i) => PALETTE_COLORS[i % PALETTE_COLORS.length]);
+      const itemBorderColors = allRoomLabels.map((_, i) => PALETTE_BORDER_COLORS[i % PALETTE_BORDER_COLORS.length]);
+
+      // 1. CHART BATANG (SEMUA DATA KELAS / RUANGAN)
       const ctxBar = document.getElementById('barChart')?.getContext('2d');
       if (ctxBar) {
         if (chartBarInstance) chartBarInstance.destroy();
         chartBarInstance = new Chart(ctxBar, {
           type: 'bar',
           data: {
-            labels: safeLabels,
+            labels: allRoomLabels,
             datasets: [{
-              label: `Frekuensi Kegiatan (${activeLabel})`,
-              data: safeData,
+              label: `Jumlah Kegiatan (${activeLabel})`,
+              data: allRoomCounts,
               backgroundColor: itemColors,
               borderColor: itemBorderColors,
               borderWidth: 1.5,
-              borderRadius: 10,
+              borderRadius: 8,
               hoverBackgroundColor: itemBorderColors
             }]
           },
@@ -987,7 +993,7 @@
                 cornerRadius: 12,
                 callbacks: {
                   label: function(context) {
-                    return ` ${context.parsed.y} Kegiatan (${activeLabel})`;
+                    return ` ${context.parsed.y} Kegiatan`;
                   }
                 }
               }
@@ -999,7 +1005,11 @@
                 grid: { color: '#f1f5f9' }
               },
               x: {
-                ticks: { font: { family: 'Poppins', size: 10, weight: '600' } },
+                ticks: { 
+                  font: { family: 'Poppins', size: 10, weight: '600' },
+                  maxRotation: 45,
+                  minRotation: 25
+                },
                 grid: { display: false }
               }
             }
@@ -1007,23 +1017,23 @@
         });
       }
 
-      // 2. CHART GARIS
+      // 2. CHART GARIS (SEMUA RUANGAN DENGAN TITIK BERAGAM WARNA & KURVA HALUS)
       const ctxLine = document.getElementById('lineChart')?.getContext('2d');
       if (ctxLine) {
         if (chartLineInstance) chartLineInstance.destroy();
 
         const gradientBg = ctxLine.createLinearGradient(0, 0, 0, 240);
-        gradientBg.addColorStop(0, 'rgba(139, 92, 246, 0.25)');
-        gradientBg.addColorStop(0.5, 'rgba(0, 163, 255, 0.1)');
+        gradientBg.addColorStop(0, 'rgba(139, 92, 246, 0.28)');
+        gradientBg.addColorStop(0.5, 'rgba(0, 163, 255, 0.12)');
         gradientBg.addColorStop(1, 'rgba(240, 249, 255, 0.01)');
 
         chartLineInstance = new Chart(ctxLine, {
           type: 'line',
           data: {
-            labels: safeLabels,
+            labels: allRoomLabels,
             datasets: [{
               label: `Tren Pemakaian (${activeLabel})`,
-              data: safeData,
+              data: allRoomCounts,
               borderColor: '#8b5cf6',
               borderWidth: 3,
               backgroundColor: gradientBg,
@@ -1031,9 +1041,9 @@
               tension: 0.4,
               pointBackgroundColor: itemColors,
               pointBorderColor: '#ffffff',
-              pointBorderWidth: 2.5,
-              pointRadius: 6,
-              pointHoverRadius: 8
+              pointBorderWidth: 2,
+              pointRadius: 5.5,
+              pointHoverRadius: 7.5
             }]
           },
           options: {
@@ -1049,7 +1059,7 @@
                 cornerRadius: 12,
                 callbacks: {
                   label: function(context) {
-                    return ` ${context.parsed.y} Pemakaian (${activeLabel})`;
+                    return ` ${context.parsed.y} Kegiatan`;
                   }
                 }
               }
@@ -1061,7 +1071,11 @@
                 grid: { color: '#f1f5f9' }
               },
               x: {
-                ticks: { font: { family: 'Poppins', size: 10, weight: '600' } },
+                ticks: { 
+                  font: { family: 'Poppins', size: 10, weight: '600' },
+                  maxRotation: 45,
+                  minRotation: 25
+                },
                 grid: { display: false }
               }
             }
@@ -1069,20 +1083,29 @@
         });
       }
 
-      // 3. CHART PIE
+      // 3. CHART PIE (SOLID PIE DENGAN SEMUA LEGENDA KELAS)
       const ctxPie = document.getElementById('pieChart')?.getContext('2d');
       if (ctxPie) {
         if (chartPieInstance) chartPieInstance.destroy();
+
+        const pieValues = allRoomCounts;
+        const hasAnyActivity = pieValues.some(v => v > 0);
+
+        // Jika belum ada aktivitas pada filter, tampilkan placeholder abu-abu
+        const displayData = hasAnyActivity 
+          ? pieValues 
+          : allRoomLabels.map(() => 0);
+
         chartPieInstance = new Chart(ctxPie, {
           type: 'pie',
           data: {
-            labels: safeLabels,
+            labels: allRoomLabels,
             datasets: [{
-              data: safeData,
-              backgroundColor: itemColors,
+              data: hasAnyActivity ? displayData : [1],
+              backgroundColor: hasAnyActivity ? itemColors : ['#e2e8f0'],
               borderColor: '#ffffff',
               borderWidth: 2.5,
-              hoverOffset: 6
+              hoverOffset: 8
             }]
           },
           options: {
@@ -1092,10 +1115,21 @@
               legend: {
                 position: 'bottom',
                 labels: {
-                  font: { family: 'Poppins', size: 11, weight: '600' },
+                  font: { family: 'Poppins', size: 10.5, weight: '600' },
                   usePointStyle: true,
                   pointStyle: 'circle',
-                  padding: 16
+                  padding: 14,
+                  generateLabels: function(chart) {
+                    return allRoomLabels.map((label, i) => ({
+                      text: label,
+                      fillStyle: itemColors[i],
+                      strokeStyle: '#ffffff',
+                      lineWidth: 1,
+                      pointStyle: 'circle',
+                      hidden: false,
+                      index: i
+                    }));
+                  }
                 }
               },
               tooltip: {
@@ -1106,10 +1140,11 @@
                 cornerRadius: 12,
                 callbacks: {
                   label: function(context) {
-                    const val = context.raw || 0;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    if (!hasAnyActivity) return ` ${context.label}: Belum ada kegiatan (${activeLabel})`;
+                    const val = allRoomCounts[context.dataIndex] || 0;
+                    const total = allRoomCounts.reduce((a, b) => a + b, 0);
                     const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                    return ` ${context.label}: ${val} (${pct}%)`;
+                    return ` ${context.label}: ${val} Kegiatan (${pct}%)`;
                   }
                 }
               }
@@ -1120,7 +1155,7 @@
     }
 
     // =========================================================================
-    // 4. RENDER JADWAL & RUANGAN
+    // 4. TABEL JADWAL & RUANGAN
     // =========================================================================
     function renderSchedules() {
       const tbody = document.getElementById('scheduleTableBody');
@@ -1130,7 +1165,7 @@
       const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
       const rFilter = document.getElementById('filterRoomSelect')?.value || '';
 
-      const filtered = schedules.filter(s => {
+      const filtered = (schedules || []).filter(s => {
         const matchQ = (s.title || '').toLowerCase().includes(q) || (s.roomName || '').toLowerCase().includes(q);
         const matchR = rFilter ? s.roomId === rFilter : true;
         return matchQ && matchR;
@@ -1184,7 +1219,7 @@
       const tbody = document.getElementById('roomTableBody');
       if (!tbody) return;
       tbody.innerHTML = '';
-      rooms.forEach(r => {
+      (rooms || []).forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/80 transition';
         tr.innerHTML = `
@@ -1206,18 +1241,18 @@
       const fSelect = document.getElementById('filterRoomSelect');
       if (sSelect) {
         const cur = sSelect.value;
-        sSelect.innerHTML = '<option value="">-- Pilih Ruangan --</option>' + rooms.map(r => `<option value="${r.id}">${r.name} (${r.floor})</option>`).join('');
+        sSelect.innerHTML = '<option value="">-- Pilih Ruangan --</option>' + (rooms || []).map(r => `<option value="${r.id}">${r.name} (${r.floor})</option>`).join('');
         if (cur) sSelect.value = cur;
       }
       if (fSelect) {
         const curF = fSelect.value;
-        fSelect.innerHTML = '<option value="">Semua Ruangan</option>' + rooms.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+        fSelect.innerHTML = '<option value="">Semua Ruangan</option>' + (rooms || []).map(r => `<option value="${r.id}">${r.name}</option>`).join('');
         fSelect.value = curF;
       }
     }
 
     // =========================================================================
-    // 5. TV SIGNAGE (WHITE GLASS CARDS, 06:30 & H-5 LOGIC)
+    // 5. TV SIGNAGE ENGINE
     // =========================================================================
     function renderTvSignage() {
       const container = document.getElementById('tvScheduleCards');
@@ -1253,10 +1288,12 @@
           if (curMinutes > endMin) return;
 
           let canShow = false;
-          if (idx === 0) {
-            canShow = (curMinutes >= 6 * 60 + 30);
-          } else {
-            canShow = (curMinutes >= startMin - 5);
+          if (curMinutes >= startMin && curMinutes <= endMin) {
+            canShow = true;
+          } else if (curMinutes >= startMin - 5 && curMinutes < startMin) {
+            canShow = true;
+          } else if (idx === 0 && startMin <= (8 * 60 + 30) && curMinutes >= (6 * 60 + 30) && curMinutes < startMin) {
+            canShow = true;
           }
 
           if (canShow) {
@@ -1291,7 +1328,7 @@
               <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00a3ff] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
               <span class="font-extrabold text-slate-800 truncate">${item.roomName}</span>
             </div>
-            <span class="font-bold text-slate-400 shrink-0 text-[10px] sm:text-xs">${item.roomFloor}</span>
+            <span class="font-black text-slate-700 shrink-0 text-[10px] sm:text-xs">${item.roomFloor}</span>
           </div>
         `;
         container.appendChild(card);
@@ -1345,7 +1382,7 @@
       e.preventDefault();
       const id = document.getElementById('schedId').value || 'SCH_' + Date.now();
       const roomId = document.getElementById('schedRoomId').value;
-      const room = rooms.find(r => r.id === roomId);
+      const room = (rooms || []).find(r => r.id === roomId);
 
       const sH = document.getElementById('schedStartHour').value;
       const sM = document.getElementById('schedStartMinute').value;
@@ -1389,7 +1426,7 @@
       }
 
       closeScheduleModal();
-      showToast('Jadwal berhasil disimpan ke Supabase!', 'success');
+      showToast('Jadwal berhasil disimpan!', 'success');
       fetchCloudData(true);
     }
 
@@ -1437,7 +1474,7 @@
       }
 
       closeRoomModal();
-      showToast('Master Ruangan berhasil disimpan ke Supabase!', 'success');
+      showToast('Master Ruangan berhasil disimpan!', 'success');
       fetchCloudData(true);
     }
 
@@ -1479,7 +1516,7 @@
     }
 
     // =========================================================================
-    // 7. KOMPRESI KANVAS GAMBAR LOGO & BACKGROUND TV
+    // 7. KOMPRESI GAMBAR KLIEN
     // =========================================================================
     function triggerLogoUpload() { document.getElementById('logoFileInput')?.click(); }
     function handleLogoUpload(e) {
@@ -1665,7 +1702,6 @@
         if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
       }
       document.getElementById('tvSignageView').style.display = 'none';
-      // Kembalikan ke login view atau dashboard admin tergantung sesi aktif
       if (document.getElementById('mainApp').style.display === 'flex') {
         document.getElementById('mainApp').style.display = 'flex';
       } else {
@@ -1685,7 +1721,7 @@
       document.getElementById('scheduleModal').style.display = 'flex';
     }
     function editSchedule(id) {
-      const s = schedules.find(item => item.id === id);
+      const s = (schedules || []).find(item => item.id === id);
       if (!s) return;
       document.getElementById('schedId').value = s.id;
       document.getElementById('schedTitle').value = s.title;
@@ -1710,7 +1746,7 @@
       document.getElementById('roomModal').style.display = 'flex';
     }
     function editRoom(id) {
-      const r = rooms.find(item => item.id === id);
+      const r = (rooms || []).find(item => item.id === id);
       if (!r) return;
       document.getElementById('roomId').value = r.id;
       document.getElementById('roomName').value = r.name;
@@ -1805,7 +1841,6 @@
     window.onload = () => {
       initTimeSelects();
       
-      // Cek parameter URL: jika dibuka dengan '?tv=1' atau '?mode=tv', langsung masuk ke layar TV
       const urlParams = new URLSearchParams(window.location.search);
       const isTvMode = urlParams.has('tv') || urlParams.get('mode') === 'tv';
 
