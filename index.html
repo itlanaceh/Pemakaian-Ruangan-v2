@@ -606,7 +606,7 @@
     // 1. STATE & DATABASE CREDENTIALS (GOOGLE APPS SCRIPT DATABASE ENGINE)
     // =========================================================================
     // TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
-    const EMBEDDED_GAS_URL = "https://script.google.com/macros/s/AKfycbzBClnfyOwGW2SD_ywpKQQRiaKEFpOVR6RYRZ6TZuQ_gveAfNN7sG2yrriAk06aVEoX6w/exec"; 
+    const EMBEDDED_GAS_URL = "https://script.google.com/macros/s/AKfycbz50__MtCsgKanRSz75yzof50VeU7Pc9c-VeDT7AeGJXfZKAlemQEHXa6ESNTznpHaarA/exec"; 
 
     let GAS_URL = localStorage.getItem('GAS_URL') || EMBEDDED_GAS_URL;
 
@@ -1963,7 +1963,7 @@
         img.onload = async function() {
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
-          const maxW = 400;
+          const maxW = 350;
           if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
           canvas.width = w; canvas.height = h;
           const ctx = canvas.getContext('2d');
@@ -1980,9 +1980,23 @@
             });
             currentLogoUrl = res.url || base64;
             applyVisualAssets();
-            showToast('Logo instansi berhasil diperbarui!', 'success');
+            showToast('Logo instansi berhasil diperbarui ke Google Drive!', 'success');
           } catch (err) {
-            showToast('Gagal menyimpan logo: ' + err.message, 'error');
+            // Fallback otomatis jika Web App Apps Script belum di-deploy ke versi baru
+            if (err.message && (err.message.includes('uploadImage') || err.message.includes('tidak dikenali'))) {
+              try {
+                showLoading('Menyimpan logo langsung ke spreadsheet...');
+                await apiCall('saveConfig', { key: 'logoImg', value: base64 });
+                currentLogoUrl = base64;
+                applyVisualAssets();
+                showToast('Logo instansi berhasil disimpan!', 'success');
+                return;
+              } catch (fallbackErr) {
+                showToast('Gagal menyimpan logo: ' + fallbackErr.message, 'error');
+              }
+            } else {
+              showToast('Gagal menyimpan logo: ' + err.message, 'error');
+            }
           } finally {
             hideLoading();
           }
@@ -2028,9 +2042,37 @@
             });
             currentTvBgUrl = res.url || base64;
             applyVisualAssets();
-            showToast('Foto latar TV berhasil disimpan ke Cloud!', 'success');
+            showToast('Foto latar TV berhasil disimpan ke Google Drive!', 'success');
           } catch (err) {
-            showToast('Gagal menyimpan foto latar: ' + err.message, 'error');
+            // Smart Fallback jika backend Apps Script belum di-deploy ulang (New Deployment)
+            if (err.message && (err.message.includes('uploadImage') || err.message.includes('tidak dikenali'))) {
+              try {
+                showLoading('Menyimpan cadangan ke spreadsheet (kompresi aman)...');
+                // Buat versi kompresi aman di bawah limit 45.000 karakter Google Sheets
+                const safeCanvas = document.createElement('canvas');
+                let sw = img.width, sh = img.height;
+                const safeMaxW = 850;
+                if (sw > safeMaxW) {
+                  sh = Math.round((sh * safeMaxW) / sw);
+                  sw = safeMaxW;
+                }
+                safeCanvas.width = sw;
+                safeCanvas.height = sh;
+                const safeCtx = safeCanvas.getContext('2d');
+                safeCtx.drawImage(img, 0, 0, sw, sh);
+                const safeBase64 = safeCanvas.toDataURL('image/jpeg', 0.65);
+
+                await apiCall('saveConfig', { key: 'tvBg', value: safeBase64 });
+                currentTvBgUrl = safeBase64;
+                applyVisualAssets();
+                showToast('Foto latar berhasil disimpan! (Catatan: Lakukan New Deployment di Apps Script untuk kualitas Ultra HD Google Drive)', 'info');
+                return;
+              } catch (fallbackErr) {
+                showToast('Gagal menyimpan foto latar: ' + fallbackErr.message, 'error');
+              }
+            } else {
+              showToast('Gagal menyimpan foto latar: ' + err.message, 'error');
+            }
           } finally {
             hideLoading();
           }
