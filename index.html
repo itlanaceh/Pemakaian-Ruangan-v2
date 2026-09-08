@@ -419,9 +419,9 @@
             <div class="flex flex-col lg:flex-row gap-4 items-end bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
               <div class="flex-1 space-y-1 w-full">
                 <label class="block text-xs font-bold text-slate-600">Link Bagikan Google Drive</label>
-                <input type="text" id="newVideoLinkInput" placeholder="https://drive.google.com/file/d/.../view" class="w-full text-xs font-medium bg-white border border-slate-200 rounded-xl px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+                <input type="text" id="newVideoLinkInput" onkeydown="if(event.key==='Enter'){event.preventDefault();addVideoToPlaylist();}" placeholder="https://drive.google.com/file/d/.../view" class="w-full text-xs font-medium bg-white border border-slate-200 rounded-xl px-3.5 py-3 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
               </div>
-              <button type="button" onclick="addVideoToPlaylist()" class="w-full lg:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 shrink-0">
+              <button type="button" onclick="addVideoToPlaylist()" id="btnAddVideo" class="w-full lg:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 shrink-0">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Tambah Video
               </button>
@@ -705,12 +705,10 @@
         if (res.tvBgContrast) tvBgContrast = parseInt(res.tvBgContrast, 10) || 100;
 
         if (res.tvVideoEnabled !== undefined) tvVideoEnabled = String(res.tvVideoEnabled).toLowerCase() === 'true';
-        if (res.tvVideoId) {
+        if (res.tvVideoId !== undefined && res.tvVideoId !== null) {
             tvVideoId = res.tvVideoId;
-            draftPlaylist = tvVideoId.split(',').filter(Boolean);
-        } else {
-            tvVideoId = '';
-            draftPlaylist = [];
+            // Gunakan antrean cloud jika ada, atau sinkronkan dengan cache lokal
+            draftPlaylist = tvVideoId ? tvVideoId.split(',').filter(Boolean) : [];
         }
         
         if (res.tvDisplayMode) tvDisplayMode = res.tvDisplayMode;
@@ -1339,16 +1337,61 @@
 
     function extractDriveId(url) {
       if (!url) return null;
-      const matchD = url.match(/\/d\/([a-zA-Z0-9_-]{25,})/);
-      const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]{25,})/);
+      const clean = url.trim();
+      
+      // 1. Ekstrak dari format link sharing Google Drive (/file/d/ID atau /d/ID)
+      const matchFile = clean.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i);
+      if (matchFile && matchFile[1]) return matchFile[1];
+
+      const matchD = clean.match(/\/d\/([a-zA-Z0-9_-]+)/i);
       if (matchD && matchD[1]) return matchD[1];
+
+      // 2. Ekstrak dari parameter query (id=ID)
+      const matchId = clean.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
       if (matchId && matchId[1]) return matchId[1];
-      if (/^[a-zA-Z0-9_-]{25,}$/.test(url.trim())) return url.trim();
+
+      // 3. String ID murni Google Drive
+      if (/^[a-zA-Z0-9_-]{15,}$/.test(clean)) return clean;
+
+      // 4. URL langsung (http/https video streaming)
+      if (/^https?:\/\/.+/i.test(clean)) return clean;
+
+      // 5. Fallback format ID umum
+      if (/^[a-zA-Z0-9_-]{6,}$/.test(clean)) return clean;
+
       return null;
     }
 
-    function addVideoToPlaylist() {
+    async function autoSavePlaylist(successMsg = '') {
+      tvVideoId = draftPlaylist.join(',');
+      activeVideoIds = [...draftPlaylist];
+      
+      const isEnabled = document.getElementById('videoToggleInput')?.checked ?? tvVideoEnabled;
+      const mode = document.getElementById('tvDisplayModeSelect')?.value || tvDisplayMode;
+      const ratio = document.getElementById('splitRatioInput')?.value || tvSplitRatio;
+      
+      tvVideoEnabled = isEnabled;
+      tvDisplayMode = mode;
+      tvSplitRatio = parseInt(ratio, 10) || 60;
+      
+      lastVideoState = null;
+      renderTvSignage();
+
+      try {
+        await apiCall('saveConfig', { key: 'tvVideoId', value: tvVideoId });
+        await apiCall('saveConfig', { key: 'tvVideoEnabled', value: String(isEnabled) });
+        await apiCall('saveConfig', { key: 'tvDisplayMode', value: mode });
+        await apiCall('saveConfig', { key: 'tvSplitRatio', value: String(tvSplitRatio) });
+        if (successMsg) showToast(successMsg, 'success');
+      } catch (err) {
+        console.warn('Auto save playlist warning:', err);
+        if (successMsg) showToast(successMsg, 'success');
+      }
+    }
+
+    async function addVideoToPlaylist() {
       const input = document.getElementById('newVideoLinkInput');
+      if (!input) return;
       const val = input.value.trim();
       if (!val) {
         showToast('Link video tidak boleh kosong!', 'error');
@@ -1356,35 +1399,48 @@
       }
       const extId = extractDriveId(val);
       if (!extId) {
-        showToast('Link Google Drive tidak valid!', 'error');
+        showToast('Format link video tidak valid!', 'error');
         return;
       }
+      
       draftPlaylist.push(extId);
       input.value = '';
       renderPlaylistUI();
-      showToast('Video ditambahkan ke antrean daftar putar.', 'success');
+
+      // Aktifkan toggle video otomatis jika ada video ditambahkan
+      const videoToggle = document.getElementById('videoToggleInput');
+      if (videoToggle && !videoToggle.checked) {
+        videoToggle.checked = true;
+        tvVideoEnabled = true;
+      }
+
+      // Simpan langsung ke database agar tidak tertimpa polling berkala
+      await autoSavePlaylist('Video ditambahkan ke antrean & tersimpan.');
     }
 
-    function removeVideoFromPlaylist(idx) {
+    async function removeVideoFromPlaylist(idx) {
       draftPlaylist.splice(idx, 1);
       renderPlaylistUI();
+      await autoSavePlaylist('Video dihapus dari antrean.');
     }
 
-    function moveVideoUp(idx) {
+    async function moveVideoUp(idx) {
       if (idx > 0) {
         const temp = draftPlaylist[idx];
         draftPlaylist[idx] = draftPlaylist[idx - 1];
         draftPlaylist[idx - 1] = temp;
         renderPlaylistUI();
+        await autoSavePlaylist('Urutan video diperbarui.');
       }
     }
 
-    function moveVideoDown(idx) {
+    async function moveVideoDown(idx) {
       if (idx < draftPlaylist.length - 1) {
         const temp = draftPlaylist[idx];
         draftPlaylist[idx] = draftPlaylist[idx + 1];
         draftPlaylist[idx + 1] = temp;
         renderPlaylistUI();
+        await autoSavePlaylist('Urutan video diperbarui.');
       }
     }
 
@@ -1392,7 +1448,7 @@
       const container = document.getElementById('playlistContainer');
       if (!container) return;
       if (draftPlaylist.length === 0) {
-        container.innerHTML = '<div class="text-center text-slate-400 text-xs py-4 font-medium">Belum ada video di daftar putar.</div>';
+        container.innerHTML = '<div class="text-center text-slate-400 text-xs py-5 font-medium">Belum ada video di daftar putar. Masukkan link Google Drive di atas lalu klik <b>Tambah Video</b>.</div>';
         return;
       }
       
@@ -1401,19 +1457,19 @@
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <span class="flex items-center justify-center w-6 h-6 rounded-full bg-sky-50 text-[10px] font-black text-[#00a3ff] shrink-0 border border-sky-100">${idx + 1}</span>
             <div class="min-w-0">
-              <p class="text-xs font-bold text-slate-700 truncate">Google Drive File ID</p>
-              <p class="text-[10px] text-slate-400 truncate">${id}</p>
+              <p class="text-xs font-bold text-slate-700 truncate">Video #${idx + 1}</p>
+              <p class="text-[10px] text-slate-400 font-mono truncate">${id}</p>
             </div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
-            <button type="button" onclick="moveVideoUp(${idx})" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition disabled:opacity-30" ${idx === 0 ? 'disabled' : ''}>
+            <button type="button" onclick="moveVideoUp(${idx})" title="Pindah ke Atas" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition disabled:opacity-30" ${idx === 0 ? 'disabled' : ''}>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
             </button>
-            <button type="button" onclick="moveVideoDown(${idx})" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition disabled:opacity-30" ${idx === draftPlaylist.length - 1 ? 'disabled' : ''}>
+            <button type="button" onclick="moveVideoDown(${idx})" title="Pindah ke Bawah" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition disabled:opacity-30" ${idx === draftPlaylist.length - 1 ? 'disabled' : ''}>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="w-px h-4 bg-slate-200 mx-1"></div>
-            <button type="button" onclick="removeVideoFromPlaylist(${idx})" class="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition">
+            <button type="button" onclick="removeVideoFromPlaylist(${idx})" title="Hapus Video" class="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
@@ -1449,7 +1505,7 @@
         tvSplitRatio = parseInt(ratio, 10);
         
         lastVideoState = null; 
-        activeVideoIds = [];
+        activeVideoIds = [...draftPlaylist];
         updateSplitRatioLive();
         renderTvSignage();
         
