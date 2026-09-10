@@ -264,10 +264,16 @@
           <div class="bg-white rounded-2xl p-4 border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
             <div class="relative flex-1 min-w-[240px]">
               <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <input type="text" id="searchInput" oninput="handleSearchDebounced()" placeholder="Cari kegiatan atau nama ruangan..." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
+              <input type="text" id="searchInput" oninput="handleSearchDebounced()" placeholder="Cari kegiatan, ruangan, atau tanggal (YYYY-MM-DD)..." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff]">
             </div>
-            <div class="w-full sm:w-56">
-              <select id="filterRoomSelect" onchange="renderSchedules()" class="w-full text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff] text-slate-700">
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+              <select id="filterTimeSelect" onchange="currentSchedulePage=1; renderSchedules()" class="w-full sm:w-36 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff] text-slate-700">
+                <option value="all">Semua Waktu</option>
+                <option value="daily">Hari Ini</option>
+                <option value="monthly">Bulan Ini</option>
+                <option value="yearly">Tahun Ini</option>
+              </select>
+              <select id="filterRoomSelect" onchange="currentSchedulePage=1; renderSchedules()" class="w-full sm:w-48 text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#00a3ff] text-slate-700">
                 <option value="">Semua Ruangan</option>
               </select>
             </div>
@@ -292,24 +298,38 @@
                 Tidak ada jadwal kegiatan ditemukan
               </div>
             </div>
+            
+            <div class="flex flex-wrap items-center justify-between px-6 py-4 border-t border-slate-100 bg-white gap-4">
+              <span id="paginationInfo" class="text-xs font-medium text-slate-500">Menampilkan 0-0 dari 0 agenda</span>
+              <div class="flex items-center gap-2">
+                <button onclick="prevSchedulePage()" id="btnPrevPage" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-50 transition shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button onclick="nextSchedulePage()" id="btnNextPage" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 disabled:opacity-50 transition shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+            </div>
+
           </div>
         </section>
 
         <section id="tab-ruangan" class="space-y-6 hidden">
-          <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h2 class="text-base font-extrabold text-slate-800">Daftar Master Ruangan</h2>
-              <p class="text-xs text-slate-400">Kelola daftar ruangan dan lantai lokasi</p>
+              <h2 class="text-base font-extrabold text-slate-800">Master Data Ruangan</h2>
+              <p class="text-xs text-slate-400">Kelola daftar ruangan atau kelas yang tersedia untuk digunakan pada jadwal.</p>
             </div>
-            <button onclick="openRoomModal()" class="px-4 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
+            <button onclick="openRoomModal()" class="px-4 sm:px-5 py-2 bg-[#00a3ff] hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md shadow-sky-500/20">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
               Tambah Ruangan
             </button>
           </div>
+
           <div class="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
             <div class="overflow-x-auto custom-scrollbar">
-              <table class="w-full text-left text-xs min-w-[400px]">
-                <thead class="bg-slate-50 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
+              <table class="w-full text-left text-xs min-w-[500px]">
+                <thead class="bg-slate-50/80 text-[11px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   <tr>
                     <th class="py-4 px-6">Nama Ruangan</th>
                     <th class="py-4 px-6">Lantai / Posisi</th>
@@ -318,6 +338,9 @@
                 </thead>
                 <tbody id="roomTableBody" class="divide-y divide-slate-100 text-slate-700 font-medium"></tbody>
               </table>
+              <div id="emptyRoom" class="p-10 text-center text-slate-400 font-medium text-xs hidden">
+                Belum ada master ruangan tersimpan
+              </div>
             </div>
           </div>
         </section>
@@ -646,6 +669,9 @@
     let analyticsFilter = 'monthly';
     let searchDebounceTimer = null;
     let confirmCallback = null;
+    
+    let currentSchedulePage = 1;
+    const schedulesPerPage = 10;
 
     let chartBarInstance = null;
     let chartLineInstance = null;
@@ -948,15 +974,34 @@
 
       const q = (document.getElementById('searchInput')?.value || '').toLowerCase();
       const rFilter = document.getElementById('filterRoomSelect')?.value || '';
+      const tFilter = document.getElementById('filterTimeSelect')?.value || 'all';
+      const nowRef = new Date();
 
       const filtered = (schedules || []).filter(s => {
-        const matchQ = (s.title || '').toLowerCase().includes(q) || (s.roomName || '').toLowerCase().includes(q);
+        const matchQ = (s.title || '').toLowerCase().includes(q) || (s.roomName || '').toLowerCase().includes(q) || (s.date || '').includes(q);
         const matchR = rFilter ? s.roomId === rFilter : true;
-        return matchQ && matchR;
+        const matchT = isScheduleInFilterPeriod(s.date, tFilter, nowRef);
+        return matchQ && matchR && matchT;
       });
 
+      const totalItems = filtered.length;
+      const totalPages = Math.ceil(totalItems / schedulesPerPage) || 1;
+      if (currentSchedulePage > totalPages) currentSchedulePage = totalPages;
+      if (currentSchedulePage < 1) currentSchedulePage = 1;
+
+      const startIndex = (currentSchedulePage - 1) * schedulesPerPage;
+      const paginated = filtered.slice(startIndex, startIndex + schedulesPerPage);
+
+      const pagInfo = document.getElementById('paginationInfo');
+      const btnPrev = document.getElementById('btnPrevPage');
+      const btnNext = document.getElementById('btnNextPage');
+      
+      if (pagInfo) pagInfo.innerText = `Menampilkan ${totalItems > 0 ? startIndex + 1 : 0}-${Math.min(startIndex + schedulesPerPage, totalItems)} dari ${totalItems} agenda`;
+      if (btnPrev) btnPrev.disabled = currentSchedulePage <= 1;
+      if (btnNext) btnNext.disabled = currentSchedulePage >= totalPages;
+
       tbody.innerHTML = '';
-      if (filtered.length === 0) {
+      if (paginated.length === 0) {
         if (empty) empty.classList.remove('hidden');
         return;
       }
@@ -966,7 +1011,7 @@
       const todayStr = now.toISOString().split('T')[0];
       const nowTimeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
-      filtered.forEach(s => {
+      paginated.forEach(s => {
         const sDate = extractDateYMD(s.date);
         const [sH, sM] = extractHourMinute(s.startTime);
         const [eH, eM] = extractHourMinute(s.endTime);
@@ -1000,8 +1045,16 @@
 
     function renderRooms() {
       const tbody = document.getElementById('roomTableBody');
+      const empty = document.getElementById('emptyRoom');
       if (!tbody) return;
+      
       tbody.innerHTML = '';
+      if (!rooms || rooms.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
+      }
+      if (empty) empty.classList.add('hidden');
+
       (rooms || []).forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50/80 transition';
@@ -1747,7 +1800,11 @@
       if (isConfirmed && typeof confirmCallback === 'function') confirmCallback();
       confirmCallback = null;
     }
-    function handleSearchDebounced() { clearTimeout(searchDebounceTimer); searchDebounceTimer = setTimeout(() => { renderSchedules(); }, 300); }
+    
+    function prevSchedulePage() { if (currentSchedulePage > 1) { currentSchedulePage--; renderSchedules(); } }
+    function nextSchedulePage() { currentSchedulePage++; renderSchedules(); }
+
+    function handleSearchDebounced() { clearTimeout(searchDebounceTimer); searchDebounceTimer = setTimeout(() => { currentSchedulePage = 1; renderSchedules(); }, 300); }
     function showLoading(msg = 'Memuat...') { const el = document.getElementById('loadingOverlay'); const txt = document.getElementById('loadingText'); if (txt) txt.innerText = msg; if (el) el.style.display = 'flex'; }
     function hideLoading() { const el = document.getElementById('loadingOverlay'); if (el) el.style.display = 'none'; }
     function showToast(msg, type = 'info') {
