@@ -693,6 +693,12 @@
       if (!GAS_URL) return;
       if (!silent) showLoading('Sinkronisasi Google Sheets...');
 
+      const syncDot = document.getElementById('syncDot');
+      if (syncDot) {
+          syncDot.classList.remove('bg-emerald-500');
+          syncDot.classList.add('bg-amber-500', 'animate-pulse');
+      }
+
       try {
         const res = await apiCall('getInitialData');
         if (res.rooms && Array.isArray(res.rooms)) rooms = res.rooms;
@@ -725,20 +731,17 @@
         renderPlaylistUI();
         updateSplitRatioLive();
         updateUiState();
-        updateSyncTimestamp();
       } catch (err) {
         if (!silent) showToast(err.message, 'error');
         updateUiState();
       } finally {
         if (!silent) hideLoading();
-      }
-    }
-
-    function updateSyncTimestamp() {
-      const ts = document.getElementById('syncTimestamp');
-      if (ts) {
-        const now = new Date();
-        ts.innerText = `Sinkron ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} WIB`;
+        if (syncDot) {
+            setTimeout(() => {
+                syncDot.classList.remove('bg-amber-500', 'animate-pulse');
+                syncDot.classList.add('bg-emerald-500');
+            }, 1000);
+        }
       }
     }
 
@@ -1678,20 +1681,17 @@
       document.getElementById('mainApp').style.display = 'none';
       document.getElementById('tvSignageView').style.display = 'flex';
       applyVisualAssets();
+      lastVideoState = null;
       renderTvSignage();
-      
-      const player = document.getElementById('tvVideoPlayer');
-      if(player && activeVideoIds.length > 0 && tvVideoEnabled) {
-          player.src = `https://drive.google.com/uc?export=download&id=${activeVideoIds[currentVideoIdx]}`;
-          player.play().catch(e=>console.warn("Autoplay audio tertahan browser"));
-      }
     }
 
     function closeTvSignageModal() {
       if (document.fullscreenElement) { if (document.exitFullscreen) document.exitFullscreen().catch(() => {}); }
       document.getElementById('tvSignageView').style.display = 'none';
-      const player = document.getElementById('tvVideoPlayer');
-      if(player) { player.pause(); player.src = ''; }
+      const iframePlayer = document.getElementById('tvIframePlayer');
+      const videoPlayer = document.getElementById('tvVideoPlayer');
+      if (iframePlayer) iframePlayer.src = '';
+      if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
       if (document.getElementById('mainApp').style.display === 'flex') { document.getElementById('mainApp').style.display = 'flex'; } 
       else { document.getElementById('loginView').style.display = 'flex'; }
     }
@@ -1758,16 +1758,47 @@
       c.appendChild(t); setTimeout(() => { t.remove(); }, 4000);
     }
 
-    setInterval(() => {
-      const now = new Date();
-      const clock = document.getElementById('tvClock');
-      if (clock) clock.innerText = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')} WIB`;
-      renderTvSignage();
-    }, 5000);
+    // =========================================================================
+    // ENGINE WAKTU REAL-TIME (BEBAS PATAH-PATAH / STUTTER-FREE)
+    // =========================================================================
+    function startRealtimeEngine() {
+      let globalLastMinute = new Date().getMinutes(); // Deklarasi variabel pelacak menit
+
+      function tick() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        const timeStr = `${h}:${m}:${s} WIB`;
+
+        // 1. Update Jam TV secara instan (Hanya memanipulasi teks tanpa mengganggu layout)
+        const tvClock = document.getElementById('tvClock');
+        if (tvClock && tvClock.innerText !== timeStr) {
+          tvClock.innerText = timeStr;
+        }
+
+        // 2. Update Jam Dashboard Admin secara realtime
+        const dashClock = document.getElementById('syncTimestamp');
+        if (dashClock && dashClock.innerText !== timeStr) {
+          dashClock.innerText = timeStr;
+        }
+
+        // 3. Sinkronisasi Presisi (Memicu refresh status "Sedang Berlangsung" tepat saat menit berganti)
+        if (now.getMinutes() !== globalLastMinute) {
+          globalLastMinute = now.getMinutes(); // Perbarui memori menit terakhir
+          updateUiState();
+        }
+
+        // Memanfaatkan frame rate peramban bawaan agar ultra-mulus
+        requestAnimationFrame(tick); 
+      }
+      requestAnimationFrame(tick);
+    }
 
     setInterval(() => { if (GAS_URL) fetchCloudData(true); }, 15000);
 
     window.onload = () => {
+      startRealtimeEngine();
       initTimeSelects();
       const urlParams = new URLSearchParams(window.location.search);
       const isTvMode = urlParams.has('tv') || urlParams.get('mode') === 'tv';
